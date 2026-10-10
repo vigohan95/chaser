@@ -1,0 +1,42 @@
+{
+  "name": "chaser",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^4.0.93",
+    "@ai-sdk/groq": "^4.0.59",
+    "@ai-sdk/openai-compatible": "^3.0.67",
+    "@ai-sdk/react": "^4.0.139",
+    "@paypal/agent-toolkit": "^1.11.0",
+    "ag-grid-community": "^36.2.0",
+    "ag-grid-react": "^36.2.0",
+    "ai": "^7.0.136",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^24.19.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  },
+  "description": "An AI agent that collects your invoices on PayPal, within the rules you set.",
+  "license": "MIT"
+}
