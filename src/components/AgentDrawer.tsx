@@ -115,7 +115,7 @@ function ApprovalCard({ tool, input, reason, onDecide }: { tool: string; input: 
   );
 }
 
-function ToolChip({ name, state, input, output, errorText }: { name: string; state: string; input: unknown; output: unknown; errorText?: string }) {
+function ToolChip({ name, state, input, output, errorText, byYou }: { name: string; state: string; input: unknown; output: unknown; errorText?: string; byYou?: boolean }) {
   const [open, setOpen] = useState(false);
   const outObj = output && typeof output === "object" ? (output as Record<string, unknown>) : undefined;
   const failed = state === "output-error" || !!outObj?.error;
@@ -127,7 +127,7 @@ function ToolChip({ name, state, input, output, errorText }: { name: string; sta
       <button className={`chip ${tone}`} onClick={() => setOpen(!open)} title={state}>
         <span className="font-mono text-[10px]">{icon}</span> {human(name)}
       </button>
-      {denied && <span className="ml-2 text-muted">blocked by policy</span>}
+      {denied && <span className={`ml-2 ${byYou ? "text-bad" : "text-muted"}`}>{byYou ? "denied by you" : "blocked by policy"}</span>}
       {outObj?.error ? <span className="ml-2 text-bad">{String(outObj.error)}</span> : null}
       {open && (
         <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-background p-2 font-mono text-[10px]">
@@ -214,7 +214,9 @@ export default function AgentDrawer({ chat, llm, pending }: { chat: Helpers; llm
                         </div>
                       );
                     }
-                    return <ToolChip key={idx} name={name} state={part.state} input={part.input} output={"output" in part ? part.output : undefined} errorText={"errorText" in part ? part.errorText : undefined} />;
+                    // A policy denial is an automatic approval response; one you clicked Deny on is not.
+                    const byYou = part.state === "output-denied" && !part.approval.isAutomatic;
+                    return <ToolChip key={idx} name={name} state={part.state} input={part.input} output={"output" in part ? part.output : undefined} errorText={"errorText" in part ? part.errorText : undefined} byYou={byYou} />;
                   }
                   return null;
                 })}

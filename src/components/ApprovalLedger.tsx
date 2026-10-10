@@ -47,7 +47,7 @@ export function ledgerRows(entries: AuditEntry[], policy: Policy): LedgerRow[] {
       rule: e.rule ?? "",
       ruleValue: ruleValue(policy, e.rule),
       reason: e.reason ?? "",
-      decidedBy: e.decision === "approved" ? "you" : e.decision === "approval-required" ? "policy -> you" : e.actor === "policy" || e.decision === "allowed" || e.decision === "denied" ? "policy" : e.actor,
+      decidedBy: e.decision === "approved" || (e.decision === "denied" && e.actor === "user") ? "you" : e.decision === "approval-required" ? "policy -> you" : e.actor === "policy" || e.decision === "allowed" || e.decision === "denied" ? "policy" : e.actor,
     }));
 }
 
@@ -70,7 +70,7 @@ export default function ApprovalLedger({ entries, policy }: { entries: AuditEntr
 
   const cols = useMemo<ColDef<LedgerRow>[]>(
     () => [
-      { field: "ts", headerName: "When", width: 95, valueFormatter: (p) => new Date(p.value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }), sort: "desc" },
+      { field: "ts", headerName: "When", width: 112, valueFormatter: (p) => new Date(p.value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }), sort: "desc" },
       { field: "action", headerName: "Action", flex: 1.2, minWidth: 240 },
       {
         field: "decision",
@@ -82,7 +82,7 @@ export default function ApprovalLedger({ entries, policy }: { entries: AuditEntr
       {
         field: "rule",
         headerName: "Policy rule",
-        width: 250,
+        width: 330,
         cellRenderer: (p: ICellRendererParams<LedgerRow, string>) =>
           p.value ? (
             <span className="font-mono text-[11px]">
@@ -92,7 +92,7 @@ export default function ApprovalLedger({ entries, policy }: { entries: AuditEntr
           ) : null,
       },
       { field: "reason", headerName: "Reason", flex: 2, minWidth: 300, tooltipField: "reason" },
-      { field: "tool", headerName: "Tool", width: 190, cellClass: "font-mono text-xs" },
+      { field: "tool", headerName: "Tool", width: 170, cellClass: "font-mono text-xs" },
     ],
     [],
   );

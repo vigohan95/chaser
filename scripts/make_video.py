@@ -21,6 +21,8 @@ Usage:
   python scripts/make_video.py --url http://localhost:3000
   python scripts/make_video.py --step assemble      # re-cut from the frames/narration already on disk
   python scripts/make_video.py --voice en-US-AvaNeural --rate -5%
+  python scripts/make_video.py --url http://localhost:3100 --no-sandbox-segment   # before docs/sandbox-evidence/ exists
+  python scripts/make_video.py --step assemble                                    # later: re-cut with the sandbox drop-in from the same recording
 
 Outputs (video/, git-ignored): chaser-demo.mp4, chaser-demo.srt, chaser-demo-thumb.png, shots.json, stills/.
 """
@@ -52,20 +54,42 @@ SHOT_TAIL = 0.6  # every shot runs at least narration + this
 # ----------------------------------------------------------------------------------------------------------
 # Shot list: title shown in the caption strip + voice-over (SUBMIT.md section B, numbers verified on the UI).
 # ----------------------------------------------------------------------------------------------------------
-SHOTS: list[tuple[str, str]] = [
-    # NOTE: order and narration follow SUBMIT.md section B (2026-10-10): reconciliation and disputes lead. The
-    # per-shot click sequences further down still implement the previous order and need re-cutting to match.
-    ("Match review", "Money arrived on PayPal. Which invoice is it? Chaser is an AI agent that answers that, on PayPal, inside rules you write down. Everything here is sandbox money."),
-    ("Edit the split, record", "One payment, two invoices: the agent proposes the split and explains it. This is an AG Grid, so I can change any allocation before it touches PayPal. If my edit over-allocates, the grid stops me. If it exceeds what an invoice is owed, the policy stops the agent: it comes back as a card citing the rule."),
-    ("Approval ledger", "Approve, and it finishes. Every decision lands in the approval ledger with the policy field it was made on. The policy is data: change a number, and the next decision changes with it."),
-    ("Policy as data", "Here is that policy. Accept disputes under twenty dollars. Show me evidence packs before they go. Ask before any refund over five hundred."),
-    ("Disputes: evidence pack to PayPal", "Disputes. The fifteen-dollar one is under my limit: accepted. The four-hundred-eighty-dollar one gets an evidence pack built from what Chaser already knows: the invoice line items, the payment record, the reminder history. I read the statement, approve, and it goes to PayPal through the Disputes API. Not a draft to paste somewhere: submitted."),
-    ("PayPal sandbox", "The same code runs against the real PayPal sandbox through the PayPal Agent Toolkit: these invoices, reminders and transactions exist on PayPal."),
-    ("Run collections", "Collections, inside the cadence: friendly at three days, firm at ten, final at twenty-one, never more than four. Each reminder quotes the actual work and the pay link."),
-    ("Create and send an invoice", "And the ordinary things: tell it what you did and it creates and sends the PayPal invoice."),
-    ("Approval card: deny", "Outside the policy, it asks. I deny this one, and that is on the record too."),
-    ("One agent, your rules", "Reconciliation you can edit, policy as data, disputes handled end to end. Built on the PayPal sandbox with the PayPal Agent Toolkit, the Vercel AI SDK and AG Grid."),
+#   (key, caption title, voice-over). Order and narration follow SUBMIT.md section B (2026-10-10): reconciliation
+#   and disputes lead. The "sandbox" shot is a DROP-IN that is never recorded in the browser: at assembly it is
+#   built from the screenshots in docs/sandbox-evidence/ (scripts/sandbox_shots.py, once the sandbox credentials
+#   exist). Until then run with --no-sandbox-segment; afterwards `--step assemble` re-cuts with it, no re-recording.
+ALL_SHOTS: list[tuple[str, str, str]] = [
+    ("match", "Match review", "Money arrived on PayPal. Which invoice is it? Chaser is an AI agent that answers that, on PayPal, inside rules you write down. Everything here is sandbox money."),
+    ("edit", "Edit the split, record", "One payment, two invoices: the agent proposes the split and explains it. This is an AG Grid, so I can change any allocation before it touches PayPal. If my edit over-allocates, the grid stops me. If it exceeds what an invoice is owed, the policy stops the agent: it comes back as a card citing the rule."),
+    ("ledger", "Approval ledger", "Approve, and it finishes. Every decision lands in the approval ledger with the policy field it was made on. The policy is data: change a number, and the next decision changes with it."),
+    ("policy", "Policy as data", "Here is that policy. Accept disputes under twenty dollars. Show me evidence packs before they go. Ask before any refund over five hundred."),
+    ("disputes", "Disputes: evidence pack to PayPal", "Disputes. The fifteen-dollar one is under my limit: accepted. The four-hundred-eighty-dollar one gets an evidence pack built from what Chaser already knows: the invoice line items, the payment record, the reminder history. I read the statement, approve, and it goes to PayPal through the Disputes API. Not a draft to paste somewhere: submitted."),
+    ("sandbox", "PayPal sandbox", "The same code runs against the real PayPal sandbox through the PayPal Agent Toolkit: these invoices, reminders and transactions exist on PayPal."),
+    ("collections", "Run collections", "Collections, inside the cadence: friendly at three days, firm at ten, final at twenty-one, never more than four. Each reminder quotes the actual work and the pay link."),
+    ("invoice", "Create and send an invoice", "And the ordinary things: tell it what you did and it creates and sends the PayPal invoice."),
+    ("deny", "Approval card: deny", "Outside the policy, it asks. I deny this one, and that is on the record too."),
+    ("closing", "One agent, your rules", "Reconciliation you can edit, policy as data, disputes handled end to end. Built on the PayPal sandbox with the PayPal Agent Toolkit, the Vercel AI SDK and AG Grid."),
 ]
+SANDBOX_KEY = "sandbox"
+SANDBOX_EVIDENCE = REPO / "docs" / "sandbox-evidence"
+
+# Active shot list (title, voice-over) and the keys in play; set by select_shots() from the command line.
+SHOTS: list[tuple[str, str]] = []
+SHOT_KEYS: list[str] = []
+
+
+def select_shots(include_sandbox: bool) -> None:
+    global SHOTS, SHOT_KEYS
+    chosen = [s for s in ALL_SHOTS if include_sandbox or s[0] != SANDBOX_KEY]
+    SHOT_KEYS = [s[0] for s in chosen]
+    SHOTS = [(s[1], s[2]) for s in chosen]
+
+
+def sandbox_pngs() -> list[Path]:
+    return sorted(p for p in SANDBOX_EVIDENCE.glob("*.png") if p.stat().st_size > 0)
+
+
+select_shots(True)
 
 # ----------------------------------------------------------------------------------------------------------
 # ffmpeg discovery
@@ -108,6 +132,10 @@ def media_duration(path: Path) -> float:
 # ----------------------------------------------------------------------------------------------------------
 
 
+def vo_path(work: Path, shot_key: str) -> Path:
+    return work / "vo" / f"vo-{shot_key}.mp3"
+
+
 def narrate(work: Path, voice: str, rate: str) -> list[float]:
     import edge_tts  # type: ignore
 
@@ -115,8 +143,8 @@ def narrate(work: Path, voice: str, rate: str) -> list[float]:
     vo_dir.mkdir(parents=True, exist_ok=True)
 
     async def render() -> None:
-        for i, (_, text) in enumerate(SHOTS, 1):
-            out, stamp = vo_dir / f"vo{i}.mp3", vo_dir / f"vo{i}.txt"
+        for shot_key, (_, text) in zip(SHOT_KEYS, SHOTS):
+            out, stamp = vo_path(work, shot_key), vo_path(work, shot_key).with_suffix(".txt")
             key = f"{voice}|{rate}|{text}"
             if out.exists() and out.stat().st_size > 0 and stamp.exists() and stamp.read_text(encoding="utf-8") == key:
                 continue  # cached from a previous run with the same voice, rate and text
@@ -124,7 +152,7 @@ def narrate(work: Path, voice: str, rate: str) -> list[float]:
             stamp.write_text(key, encoding="utf-8")
 
     asyncio.run(render())
-    durations = [media_duration(vo_dir / f"vo{i}.mp3") for i in range(1, len(SHOTS) + 1)]
+    durations = [media_duration(vo_path(work, k)) for k in SHOT_KEYS]
     for i, d in enumerate(durations, 1):
         print(f"  narration {i}: {d:5.2f}s  {SHOTS[i-1][0]}")
     print(f"  narration total: {sum(durations):.1f}s")
@@ -167,6 +195,7 @@ OVERLAY_JS = r"""
 """
 
 
+
 @dataclass
 class Recorder:
     page: object
@@ -202,10 +231,11 @@ class Recorder:
     def caption(self, text: str) -> None:
         self.page.evaluate(OVERLAY_JS, text)
 
-    def begin(self, index: int) -> None:
-        self.caption(f"{index} / {len(SHOTS)}  —  {SHOTS[index - 1][0]}")
+    def begin(self, key: str) -> None:
+        index = SHOT_KEYS.index(key) + 1
+        self.caption(SHOTS[index - 1][0])
         self.pause(0.25)
-        self.shots.append({"index": index, "title": SHOTS[index - 1][0], "start": time.time()})
+        self.shots.append({"key": key, "index": index, "title": SHOTS[index - 1][0], "start": time.time()})
 
     def end(self, min_len: float) -> None:
         shot = self.shots[-1]
@@ -214,7 +244,7 @@ class Recorder:
             self.pause(remaining)
         shot["end"] = time.time()
         shot["seconds"] = round(shot["end"] - shot["start"], 2)
-        print(f"  shot {shot['index']}: {shot['seconds']:.1f}s  {shot['title']}")
+        print(f"  shot {shot['key']}: {shot['seconds']:.1f}s  {shot['title']}")
 
     # -- mouse ----------------------------------------------------------------------------------------------
     def move(self, x: float, y: float, dur: float | None = None) -> None:
@@ -256,11 +286,20 @@ class Recorder:
         self.click(locator)
         self.page.keyboard.type(text, delay=int(1000 / cps))
 
+    def edit_cell(self, cell, text: str, cps: float = 9) -> None:
+        """Single-click an editable AG Grid cell, replace its value, commit with Enter."""
+        self.click(cell, settle=0.4)
+        self.page.keyboard.press("Control+A")
+        self.page.keyboard.type(text, delay=int(1000 / cps))
+        self.pause(0.35)
+        self.page.keyboard.press("Enter")
+        self.pause(0.45)
+
     # -- app helpers ----------------------------------------------------------------------------------------
     def wait_agent_done(self, timeout: float = 120) -> None:
         stop = self.page.locator("aside button:has-text('Stop')")
         try:
-            stop.wait_for(state="visible", timeout=15_000)
+            stop.wait_for(state="visible", timeout=3_000)  # a resumed run (after Approve / Deny) can finish before Stop shows
         except Exception:
             pass
         stop.wait_for(state="detached", timeout=int(timeout * 1000))
@@ -302,84 +341,112 @@ def record(work: Path, out: Path, url: str, narration: list[float], headed: bool
         if not rec.frames:
             raise SystemExit("screencast produced no frames")
 
-        grid_input = page.locator("main input[placeholder^='Filter']")
         agent_input = page.locator("aside form input")
         send_btn = page.locator("aside form button[type=submit]")
         tab = lambda name: page.locator(f"main nav button:has-text('{name}')")  # noqa: E731
         header_btn = lambda name: page.locator(f"header button:has-text('{name}')")  # noqa: E731
         action_btn = lambda name: page.locator(f"main button:has-text('{name}')").first  # noqa: E731
-        app_root = "body > div.flex"
+        approve_btn = page.locator("aside button:has-text('Approve')")
+        deny_btn = page.locator("aside button:has-text('Deny')")
+        card = page.locator("aside .border-amber-400").first
+        match_grid = page.locator("main .ag-root-wrapper").first  # the match review is the first grid on the Payments tab
+        mr_row = lambda inv: match_grid.locator(".ag-row[row-id]").filter(has=page.locator(f".ag-cell[col-id='invoice_number']:has-text('{inv}')")).first  # noqa: E731
+        mr_cell = lambda inv, col: mr_row(inv).locator(f".ag-cell[col-id='{col}']").first  # noqa: E731
+        need_for = lambda key: need[SHOT_KEYS.index(key)]  # noqa: E731
 
-        # ---- 1. Command center + KPI zoom ----------------------------------------------------------------
-        rec.begin(1)
-        rec.still(stills, "01-command-center")
-        rec.move(700, 640, 0.9)
-        rec.pause(1.6)
-        page.evaluate(f"() => {{ const r = document.querySelector('{app_root}'); r.style.transition = 'transform 1.6s cubic-bezier(.4,0,.2,1)'; r.style.transformOrigin = '0px 60px'; r.style.transform = 'scale(1.45)'; }}")
-        rec.pause(1.7)
-        rec.move(120, 150, 1.0)
-        rec.move(560, 150, 1.6)
-        rec.pause(1.8)
-        page.evaluate(f"() => {{ document.querySelector('{app_root}').style.transform = 'scale(1)'; }}")
-        rec.pause(1.7)
-        page.evaluate(f"() => {{ const r = document.querySelector('{app_root}'); r.style.transition = ''; r.style.transform = ''; }}")
-        rec.end(need[0])
+        def wait_card() -> None:
+            approve_btn.wait_for(timeout=60_000)
+            rec.pause(0.5)
 
-        # ---- 2. AG Grid tour + policy --------------------------------------------------------------------
-        rec.begin(2)
-        overdue_hdr = page.locator(".ag-header-cell[col-id='overdue']")
-        rec.hover(overdue_hdr)
-        rec.pause(0.4)
-        for n in ("0001", "0002", "0006", "0003"):  # 37d final, 15d firm, 10d firm, 5d friendly
-            cell = page.locator(f".ag-row[row-id='INV2-CH{n}-MOCK-{n}-DEMO'] .ag-cell[col-id='overdue']").first
-            rec.hover(cell, dur=0.4)
-            rec.pause(0.2)
-        smooth_scroll(page, ".ag-body-horizontal-scroll-viewport", left=420)
-        rec.pause(1.3)
-        smooth_scroll(page, ".ag-body-horizontal-scroll-viewport", left=0)
+        # ---- match: Payments tab, the match review already populated ----------------------------------------
+        rec.begin("match")
+        rec.hover(page.locator("main .grid > div").last)  # KPI: unmatched payments
         rec.pause(0.9)
-        # selection drives agent actions
-        for rid in ("INV2-CH0001-MOCK-0001-DEMO", "INV2-CH0010-MOCK-0010-DEMO"):
-            rec.click(page.locator(f".ag-row[row-id='{rid}'] .ag-selection-checkbox").first, settle=0.3)
-        rec.hover(action_btn("Chase selected"))
-        rec.pause(1.0)
-        for rid in ("INV2-CH0001-MOCK-0001-DEMO", "INV2-CH0010-MOCK-0010-DEMO"):
-            rec.click(page.locator(f".ag-row[row-id='{rid}'] .ag-selection-checkbox").first, settle=0.15)
-        rec.click(header_btn("Policy"), settle=0.5)
-        for label in ("Friendly nudge after", "Firm reminder after", "Final notice after", "Auto-accept disputes under", "Ask me for refunds over"):
-            rec.hover(page.locator(f"aside label:has-text('{label}') input"), dur=0.45)
-            rec.pause(0.45)
-        rec.still(stills, "02-policy-panel")
-        rec.pause(0.3)
-        rec.click(header_btn("Policy"), settle=0.3)
-        rec.end(need[1])
-
-        # ---- 3. Create + send an invoice from natural language --------------------------------------------
-        rec.begin(3)
-        rec.type_text(agent_input, "I finished the logo package for Acme Corp, $1,200, net 15")
-        rec.pause(0.3)
-        rec.click(send_btn)
-        rec.wait_agent_done()
-        rec.pause(1.0)
-        rec.type_text(grid_input, "Acme", cps=14)
+        rec.click(tab("Payments"), settle=0.9)
+        mr_row("INV-0016").wait_for(timeout=20_000)
         rec.pause(0.5)
-        new_row = page.locator(".ag-row[row-id]:has-text('INV-0021')").first
-        if new_row.count():
-            rec.hover(new_row.locator(".ag-cell").nth(1))
-        rec.pause(1.3)
-        rec.click(grid_input)
-        page.keyboard.press("Control+A")
-        page.keyboard.press("Backspace")
-        rec.pause(0.3)
-        rec.click(tab("Audit"), settle=0.7)
-        rec.hover(page.locator("main ol li").nth(1))
-        rec.still(stills, "03-audit-timeline")
-        rec.pause(2.0)
-        rec.click(tab("Invoices"), settle=0.2)
-        rec.end(need[2])
+        rec.still(stills, "01-match-review")
+        for inv in ("INV-0013", "INV-0014", "INV-0015", "INV-0016"):  # exact 95%, partial 70%, split 90% x2
+            rec.hover(mr_cell(inv, "kind"), dur=0.45)
+            rec.pause(0.55)
+        rec.hover(mr_cell("INV-0015", "amount"), dur=0.5)
+        rec.end(need_for("match"))
 
-        # ---- 4. Run collections ----------------------------------------------------------------------------
-        rec.begin(4)
+        # ---- edit: change the split, trip the guard, fix it, record, approval card --------------------------
+        rec.begin("edit")
+        rec.hover(mr_cell("INV-0015", "reasoning"), dx=-120)  # tooltip with the agent's reasoning
+        rec.pause(1.6)
+        rec.edit_cell(mr_cell("INV-0015", "amount"), "1000")  # $900 -> $1,000: the $1,400 payment is now over-allocated
+        rec.pause(0.5)
+        rec.hover(mr_cell("INV-0016", "amount"), dur=0.4)
+        rec.pause(0.3)
+        rec.still(stills, "02-over-allocation-guard")
+        rec.hover(action_btn("Record"), dur=0.6)  # disabled while a payment is over-allocated
+        rec.pause(1.1)
+        rec.edit_cell(mr_cell("INV-0016", "amount"), "400")  # $500 -> $400: back within the payment
+        rec.pause(0.6)
+        rec.still(stills, "03-split-edited")
+        rec.click(action_btn("Record"), settle=0.3)
+        wait_card()  # $1,000 on a $900 balance: reconciliation.amountTolerance asks
+        rec.hover(card.locator("p").first, dy=-4)
+        rec.pause(0.6)
+        rec.still(stills, "04-approval-card-reconciliation")
+        rec.pause(1.4)
+        rec.end(need_for("edit"))
+
+        # ---- ledger: approve, then the approval ledger with the policy fields -------------------------------
+        rec.begin("ledger")
+        rec.click(approve_btn, settle=0.4)
+        rec.wait_agent_done()
+        rec.pause(0.9)
+        rec.click(tab("Approvals"), settle=0.9)
+        rule_cells = page.locator("main .ag-row[row-id] .ag-cell[col-id='rule']")
+        rule_cells.first.wait_for(timeout=15_000)
+        for i in range(min(5, rule_cells.count())):
+            rec.hover(rule_cells.nth(i), dur=0.4)
+            rec.pause(0.45)
+        rec.still(stills, "05-approval-ledger")
+        rec.pause(0.8)
+        rec.end(need_for("ledger"))
+
+        # ---- policy: the panel -----------------------------------------------------------------------------
+        rec.begin("policy")
+        rec.click(header_btn("Policy"), settle=0.6)
+        for sel in ("aside label:has-text('Auto-accept disputes under') input", "aside label:has-text('Dispute evidence packs') select", "aside label:has-text('Ask me for refunds over') input"):
+            rec.hover(page.locator(sel), dur=0.5)
+            rec.pause(1.2)
+        rec.still(stills, "06-policy-panel")
+        rec.pause(0.4)
+        rec.click(header_btn("Policy"), settle=0.3)
+        rec.end(need_for("policy"))
+
+        # ---- disputes: accept the small one, evidence pack for the big one, approve, submitted ---------------
+        rec.begin("disputes")
+        rec.click(action_btn("Review disputes"))
+        wait_card()
+        chips = page.locator("aside .mr-2").last.locator(".chip")
+        for n in range(min(3, chips.count())):  # List disputes, Accept dispute, Build evidence pack
+            rec.hover(chips.nth(n), dur=0.4)
+            rec.pause(0.55)
+        rec.hover(card.locator(".bg-panel").first, dy=20)
+        rec.pause(0.6)
+        rec.still(stills, "07-evidence-pack-card")
+        rec.pause(3.2)
+        rec.click(approve_btn, settle=0.4)
+        rec.wait_agent_done()
+        rec.pause(0.8)
+        rec.click(tab("Disputes"), settle=0.9)
+        rec.click(page.locator("main .ag-row[row-id='PP-D-MOCK-00480'] .ag-cell").nth(3), settle=0.7)
+        rec.hover(page.locator("main .bg-panel .font-semibold").first, dy=4)
+        rec.pause(0.5)
+        rec.still(stills, "08-dispute-submitted")
+        rec.hover(page.locator("main .ag-row[row-id='PP-D-MOCK-00480'] .ag-cell[col-id='status']").first, dur=0.6)
+        rec.pause(1.2)
+        rec.end(need_for("disputes"))
+
+        # ---- collections -----------------------------------------------------------------------------------
+        rec.begin("collections")
+        rec.click(tab("Invoices"), settle=0.6)
         rec.click(action_btn("Run collections"))
         rec.wait_agent_done()
         rec.pause(0.8)
@@ -388,81 +455,54 @@ def record(work: Path, out: Path, url: str, narration: list[float], headed: bool
         rec.pause(0.9)
         rec.click(chip, settle=0.5)
         rec.hover(page.locator("aside pre").first, dy=-20)
-        rec.pause(3.2)
-        rec.still(stills, "04-reminder-detail")
+        rec.pause(2.6)
+        rec.still(stills, "10-reminder-detail")
         rec.hover(page.locator(".ag-header-cell[col-id='reminders'], .ag-header-cell:has-text('Reminders')").first)
         rec.pause(1.0)
-        rec.end(need[3])
+        rec.end(need_for("collections"))
 
-        # ---- 5. Reconcile payments -----------------------------------------------------------------------
-        rec.begin(5)
-        rec.click(tab("Transactions"), settle=0.9)
-        rec.hover(page.locator(".ag-row[row-id]:has-text('UNMATCHED')").first.locator(".ag-cell").last)
-        rec.pause(0.9)
-        rec.click(action_btn("Reconcile payments"))
-        rec.wait_agent_done()
-        rec.pause(0.8)
-        summary = page.locator("aside .mr-2").last.locator("div.prose-chat").last
-        rec.hover(summary, dy=-40)
-        rec.still(stills, "05-reconciliation")
-        rec.pause(2.0)
-        rec.end(need[4])
-
-        # ---- 6. Webhook -----------------------------------------------------------------------------------
-        rec.begin(6)
-        rec.click(tab("Invoices"), settle=0.5)
-        sel = page.locator("header select")
-        rec.hover(sel)
+        # ---- invoice: create + send from natural language ---------------------------------------------------
+        rec.begin("invoice")
+        rec.type_text(agent_input, "I finished the logo package for Acme Corp, $1,200, net 15")
         rec.pause(0.3)
-        sel.select_option(label="INV-0003 - Northwind Traders - $1,500.00")
-        rec.pause(0.7)
-        rec.click(header_btn("Fire webhook"), settle=0.6)
-        paid_row = page.locator(".ag-row[row-id='INV2-CH0003-MOCK-0003-DEMO']").first
-        try:
-            paid_row.locator(":text('PAID')").first.wait_for(timeout=10_000)
-            rec.hover(paid_row.locator(".ag-cell[col-id='status']").first)  # the row re-sorts; may be virtualized away
-        except Exception:
-            pass
-        rec.pause(1.2)
-        rec.hover(page.locator("main .grid > div").first)
-        rec.pause(0.8)
-        rec.end(need[5])
+        rec.click(send_btn)
+        rec.wait_agent_done()
+        rec.pause(0.6)
+        for n in range(3):  # Look up client, Create invoice, Send invoice
+            rec.hover(page.locator("aside .mr-2").last.locator(".chip").nth(n), dur=0.35)
+            rec.pause(0.4)
+        new_row = page.locator(".ag-row[row-id]:has-text('INV-0021')").first
+        if new_row.count():
+            rec.hover(new_row.locator(".ag-cell").nth(1), dur=0.6)
+        rec.still(stills, "11-invoice-created")
+        rec.pause(0.9)
+        rec.end(need_for("invoice"))
 
-        # ---- 7. Approval card --------------------------------------------------------------------------------
-        rec.begin(7)
+        # ---- deny: refund over the threshold -> approval card -> Deny -> ledger row --------------------------
+        rec.begin("deny")
         rec.type_text(agent_input, "Refund $600 on INV-0007")
         rec.pause(0.2)
         rec.click(send_btn)
-        approve = page.locator("aside button:has-text('Approve')")
-        approve.wait_for(timeout=60_000)
-        rec.pause(0.5)
-        rec.hover(page.locator("aside .border-amber-400 p").first)
-        rec.still(stills, "06-approval-card")
-        rec.pause(2.4)
-        rec.click(approve, settle=0.4)
+        wait_card()
+        rec.hover(card.locator("p").first, dy=-4)
+        rec.still(stills, "12-refund-approval-card")
+        rec.pause(1.6)
+        rec.click(deny_btn, settle=0.4)
         rec.wait_agent_done()
-        rec.pause(1.8)
-        rec.end(need[6])
+        rec.pause(0.7)
+        rec.click(tab("Approvals"), settle=0.9)
+        rec.hover(page.locator("main .ag-row[row-id] .ag-cell[col-id='decision']").first, dur=0.5)
+        rec.still(stills, "13-ledger-denied")
+        rec.pause(1.0)
+        rec.end(need_for("deny"))
 
-        # ---- 8. Disputes -------------------------------------------------------------------------------------
-        rec.begin(8)
-        rec.click(action_btn("Review disputes"))
-        rec.wait_agent_done()
-        rec.pause(0.6)
-        rec.click(tab("Disputes"), settle=0.8)
-        rec.click(page.locator(".ag-row[row-id]:has-text('480')").first.locator(".ag-cell").nth(3), settle=0.6)
-        rec.hover(page.locator("main pre").first, dy=-10)
-        rec.still(stills, "07-dispute-evidence")
-        rec.pause(2.0)
-        rec.end(need[7])
-
-        # ---- 9. Closing slide ----------------------------------------------------------------------------------
+        # ---- closing slide -----------------------------------------------------------------------------------
         slide = work / "slide.html"
-        slide.write_text(closing_slide_html(f"{len(SHOTS)} / {len(SHOTS)}  —  {SHOTS[-1][0]}"), encoding="utf-8")
-        rec.begin(9)
+        slide.write_text(closing_slide_html(SHOTS[-1][0]), encoding="utf-8")
+        rec.begin("closing")
         page.goto(slide.as_uri(), wait_until="load")
         rec.pause(1.0)
-        rec.end(need[8])
+        rec.end(need_for("closing"))
         rec.pause(0.3)
 
         rec.stop()
@@ -470,8 +510,9 @@ def record(work: Path, out: Path, url: str, narration: list[float], headed: bool
         frames = rec.frames
         browser.close()
 
-    if len(shots) != len(SHOTS):
-        raise SystemExit(f"Recorded {len(shots)} shots but SHOTS has {len(SHOTS)} entries: the click sequence in record() must be re-cut to match the shot list / narration (see SUBMIT.md section B).")
+    expected = [k for k in SHOT_KEYS if k != SANDBOX_KEY]
+    if [s["key"] for s in shots] != expected:
+        raise SystemExit(f"Recorded shots {[s['key'] for s in shots]} but the shot list is {expected}: the click sequence in record() must match the shot list / narration (see SUBMIT.md section B).")
 
     (work / "frames.json").write_text(json.dumps(frames), encoding="utf-8")
     (work / "shots.json").write_text(json.dumps(shots, indent=1), encoding="utf-8")
@@ -507,7 +548,7 @@ def title_card_html() -> str:
   p.ev {{ font-size: 28px; margin-top: 56px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); }}
   </style></head><body><div class="bg"></div><div class="wrap"><div>
   <div class="mark">C</div><h1>Chaser</h1>
-  <p class="tag">An AI agent that collects your invoices on PayPal, your rules.</p>
+  <p class="tag">Matches every PayPal payment to the right invoice, and handles what follows.</p>
   <p class="ev">PayPal AI Hackathon 2026</p></div></div></body></html>"""
 
 
@@ -555,8 +596,22 @@ def closing_slide_html(caption: str) -> str:
   .box {{ border-color: rgba(96,165,250,.45); }}
   @keyframes in {{ from {{ opacity: 0; transform: translateY(10px) }} to {{ opacity: 1; transform: none }} }}
   </style></head><body><div class="bg"></div><div class="page">
-  <div><h1>One agent, your rules<small>Eight PayPal toolkit areas plus webhooks, driven by an agent that asks at the edges.</small></h1><ul>{tiles}</ul></div>
+  <div><h1>One agent, your rules<small>Reconciliation you can edit · policy as data · disputes end to end. Eight PayPal toolkit areas plus webhooks.</small></h1><ul>{tiles}</ul></div>
   <div class="right">{boxes}</div></div>
+  <div class="cap"><span class="m">Chaser demo</span><span class="b">{caption}</span><span class="r">chaser-six.vercel.app  ·  PayPal sandbox, play money only</span></div>
+  </body></html>"""
+
+
+def sandbox_slide_html(png: Path, n: int, total: int, caption: str) -> str:
+    data = base64.b64encode(png.read_bytes()).decode()
+    return f"""<!doctype html><html><head><meta charset="utf-8"><style>{BASE_CSS}
+  .page {{ position: absolute; inset: 0 0 44px 0; display: grid; grid-template-rows: auto 1fr; padding: 26px 48px 22px; gap: 14px; }}
+  h2 {{ font-size: 30px; font-weight: 600; text-align: center; letter-spacing: .01em; }} h2 b {{ color: #93c5fd; font-family: ui-monospace, Consolas, monospace; font-weight: 600; }}
+  h2 small {{ display: block; font-size: 18px; font-weight: 500; color: rgba(255,255,255,.6); margin-top: 6px; }}
+  .shot {{ justify-self: center; align-self: center; max-width: 100%; max-height: 100%; border-radius: 12px; box-shadow: 0 24px 70px rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.12); }}
+  </style></head><body><div class="bg"></div><div class="page">
+  <h2>Same code, real PayPal sandbox: <b>MOCK_PAYPAL=0</b> and the PayPal Agent Toolkit<small>{png.stem.replace('-', ' ')}  ·  {n} / {total}  ·  docs/sandbox-evidence/</small></h2>
+  <img class="shot" src="data:image/png;base64,{data}"></div>
   <div class="cap"><span class="m">Chaser demo</span><span class="b">{caption}</span><span class="r">chaser-six.vercel.app  ·  PayPal sandbox, play money only</span></div>
   </body></html>"""
 
@@ -573,7 +628,7 @@ def thumbnail_html(bg_png: Path) -> str:
   p {{ font-size: 30px; margin-top: 18px; line-height: 1.25; color: rgba(255,255,255,.9); }}
   .pill {{ display: inline-block; margin-top: 28px; padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,.12); font-size: 20px; letter-spacing: .06em; text-transform: uppercase; }}
   </style></head><body><div class="shot"></div><div class="shade"></div><div class="txt"><div class="mark">C</div><h1>Chaser</h1>
-  <p>An AI agent that collects your invoices on PayPal, your rules.</p><span class="pill">PayPal AI Hackathon 2026 · demo</span></div></body></html>"""
+  <p>Matches every PayPal payment to the right invoice, and handles what follows.</p><span class="pill">PayPal AI Hackathon 2026 · demo</span></div></body></html>"""
 
 
 def render_html_png(html: str, out: Path, width: int, height: int) -> None:
@@ -586,7 +641,8 @@ def render_html_png(html: str, out: Path, width: int, height: int) -> None:
         pg = b.new_page(viewport={"width": width, "height": height}, device_scale_factor=1)
         pg.goto(src.as_uri(), wait_until="load")
         pg.wait_for_timeout(4000 if "animation" in html else 300)  # let CSS reveal animations finish
-        pg.screenshot(path=str(out))
+        jpeg = out.suffix.lower() in (".jpg", ".jpeg")
+        pg.screenshot(path=str(out), type="jpeg" if jpeg else "png", **({"quality": 92} if jpeg else {}))
         b.close()
 
 
@@ -659,6 +715,21 @@ def srt_time(t: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
+def sandbox_segment(work: Path, index: int, seconds: float) -> list[tuple[str, float]]:
+    """The DROP-IN: one slide per screenshot in docs/sandbox-evidence/, equal time each, as (jpeg, seconds) pairs."""
+    pngs = sandbox_pngs()
+    if not pngs:
+        raise SystemExit(f"The sandbox drop-in needs screenshots in {SANDBOX_EVIDENCE}; run scripts/sandbox_shots.py against a sandbox-mode server, or pass --no-sandbox-segment.")
+    slides = work / "sandbox"
+    slides.mkdir(exist_ok=True)
+    seq: list[tuple[str, float]] = []
+    for n, png in enumerate(pngs, 1):
+        jpg = slides / f"slide{n:02d}.jpg"
+        render_html_png(sandbox_slide_html(png, n, len(pngs), SHOTS[index - 1][0]), jpg, 1920, 1080)
+        seq.append((jpg.name, seconds / len(pngs)))
+    return seq
+
+
 def assemble(work: Path, out: Path, narration: list[float]) -> Path:
     frames = [tuple(f) for f in json.loads((work / "frames.json").read_text(encoding="utf-8"))]
     shots = json.loads((work / "shots.json").read_text(encoding="utf-8"))
@@ -674,13 +745,21 @@ def assemble(work: Path, out: Path, narration: list[float]) -> Path:
     encode_card(title_png, seg_dir / "00-title.mp4", CARD_SECONDS, True, True)
     segments.append((seg_dir / "00-title.mp4", None, None))
 
-    for shot in shots:
-        i = shot["index"]
-        seq = frames_for_shot(frames, shot["start"], shot["end"])
-        seg = seg_dir / f"{i:02d}-shot.mp4"
-        encode_frames(work / "frames", seq, seg)
-        segments.append((seg, work / "vo" / f"vo{i}.mp3", i))
-        print(f"  segment {i}: {len(seq)} frames -> {media_duration(seg):.2f}s")
+    by_key = {s["key"]: s for s in shots}
+    expected = [k for k in SHOT_KEYS if k != SANDBOX_KEY]
+    if list(by_key) != expected:
+        raise SystemExit(f"shots.json has {list(by_key)} but the shot list needs {expected}: re-record (the sandbox drop-in is never recorded, so this is about the other shots).")
+    for i, key in enumerate(SHOT_KEYS, 1):
+        seg = seg_dir / f"{i:02d}-{key}.mp4"
+        if key == SANDBOX_KEY:
+            seq = sandbox_segment(work, i, narration[i - 1] + NARRATION_LEAD + SHOT_TAIL)
+            encode_frames(work / "sandbox", seq, seg)
+        else:
+            shot = by_key[key]
+            seq = frames_for_shot(frames, shot["start"], shot["end"])
+            encode_frames(work / "frames", seq, seg)
+        segments.append((seg, vo_path(work, key), i))
+        print(f"  segment {i} {key}: {len(seq)} frames -> {media_duration(seg):.2f}s")
 
     encode_card(end_png, seg_dir / "99-end.mp4", CARD_SECONDS, True, False)
     segments.append((seg_dir / "99-end.mp4", None, None))
@@ -704,7 +783,7 @@ def assemble(work: Path, out: Path, narration: list[float]) -> Path:
         wavs.append(wav)
         t += length
     timeline.insert(0, {"shot": 0, "title": "Title card", "start": 0.0, "end": CARD_SECONDS, "video_s": CARD_SECONDS})
-    timeline.append({"shot": 10, "title": "End card", "start": round(t - CARD_SECONDS, 2), "end": round(t, 2), "video_s": CARD_SECONDS})
+    timeline.append({"shot": len(SHOTS) + 1, "title": "End card", "start": round(t - CARD_SECONDS, 2), "end": round(t, 2), "video_s": CARD_SECONDS})
 
     alist = work / "audio.txt"
     alist.write_text("".join(f"file '{w.as_posix()}'\n" for w in wavs), encoding="utf-8")
@@ -719,7 +798,7 @@ def assemble(work: Path, out: Path, narration: list[float]) -> Path:
     (out / "shots.json").write_text(json.dumps(timeline, indent=1), encoding="utf-8")
 
     # thumbnail: approval-card still (or the command center) behind the title
-    bg = next((p for p in (out / "stills" / "06-approval-card.png", out / "stills" / "01-command-center.png") if p.exists()), None)
+    bg = next((p for p in (out / "stills" / "04-approval-card-reconciliation.png", out / "stills" / "01-match-review.png") if p.exists()), None)
     if bg:
         render_html_png(thumbnail_html(bg), out / "chaser-demo-thumb.png", 1280, 720)
     # 1280x720 copies of the stills for the Devpost gallery
@@ -757,10 +836,14 @@ def verify(final: Path, work: Path) -> dict:
         yavg = next((float(line.split("=")[-1]) for line in stats.splitlines() if "YAVG" in line), 0.0)
         report.append({"t": round(t, 1), "png": str(png), "yavg": yavg})
         assert yavg > 16, f"frame at {t:.1f}s is black (YAVG={yavg})"
+    # no stretch of (near) black longer than the card fades
+    bd = run([FFMPEG, "-hide_banner", "-i", str(final), "-vf", "blackdetect=d=0.8:pix_th=0.10", "-an", "-f", "null", "-"]).stderr
+    black = [line.split("]", 1)[-1].strip() for line in bd.splitlines() if "black_start" in line]
+    assert not black, f"long black stretch(es): {black}"
     # audio actually has signal
     vol = run([FFMPEG, "-hide_banner", "-i", str(final), "-af", "volumedetect", "-vn", "-f", "null", "-"]).stderr
     mean_vol = next((line.split("mean_volume:")[1].strip() for line in vol.splitlines() if "mean_volume" in line), "?")
-    result = {"duration_s": round(dur, 2), "size_mb": round(size / 1048576, 1), "video": f"{kinds['video']['codec_name']} {kinds['video']['width']}x{kinds['video']['height']} {kinds['video'].get('r_frame_rate')}", "audio": f"{kinds['audio']['codec_name']} {kinds['audio'].get('sample_rate')} Hz", "mean_volume": mean_vol, "frames": report}
+    result = {"black_stretches": black, "duration_s": round(dur, 2), "size_mb": round(size / 1048576, 1), "video": f"{kinds['video']['codec_name']} {kinds['video']['width']}x{kinds['video']['height']} {kinds['video'].get('r_frame_rate')}", "audio": f"{kinds['audio']['codec_name']} {kinds['audio'].get('sample_rate')} Hz", "mean_volume": mean_vol, "frames": report}
     print(json.dumps(result, indent=1))
     return result
 
@@ -769,6 +852,7 @@ def verify(final: Path, work: Path) -> dict:
 
 
 def main() -> None:
+    global SANDBOX_EVIDENCE
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--url", default=LIVE_URL)
     ap.add_argument("--voice", default="en-US-AndrewNeural")
@@ -777,7 +861,14 @@ def main() -> None:
     ap.add_argument("--work", default=str(Path(tempfile.gettempdir()) / "chaser-video"), help="scratch dir for frames/segments (hundreds of MB)")
     ap.add_argument("--step", choices=["all", "narrate", "record", "assemble", "verify"], default="all")
     ap.add_argument("--headed", action="store_true", help="show the browser while recording")
+    ap.add_argument("--no-sandbox-segment", action="store_true", help="leave out the PayPal sandbox drop-in (docs/sandbox-evidence/*.png not recorded yet)")
+    ap.add_argument("--sandbox-evidence", default=str(SANDBOX_EVIDENCE), help="folder with the sandbox screenshots for the drop-in")
     a = ap.parse_args()
+    SANDBOX_EVIDENCE = Path(a.sandbox_evidence)
+    select_shots(not a.no_sandbox_segment)
+    if not a.no_sandbox_segment and a.step in ("all", "assemble") and not sandbox_pngs():
+        sys.exit(f"The sandbox drop-in needs screenshots in {SANDBOX_EVIDENCE} (run scripts/sandbox_shots.py against a sandbox-mode server), or pass --no-sandbox-segment.")
+    print(f"shots:  {len(SHOTS)} ({'with' if SANDBOX_KEY in SHOT_KEYS else 'without'} the sandbox drop-in)")
     work, out = Path(a.work), Path(a.out)
     work.mkdir(parents=True, exist_ok=True)
     out.mkdir(parents=True, exist_ok=True)
