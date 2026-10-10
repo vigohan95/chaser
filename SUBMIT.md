@@ -62,6 +62,8 @@ Multi-merchant auth (PayPal Log In), evidence file attachments on `provide-evide
 
 ## B. Demo video plan (target 2:50, hard cap 2:58)
 
+**Status 2026-10-10:** `video/chaser-demo.mp4` re-assembled with the PayPal sandbox drop-in (`--step assemble --sandbox-evidence docs/sandbox-evidence`): **2:31** (150.9 s), H.264 + AAC, sandbox segment at 1:24-1:35 (4 slides from `docs/sandbox-evidence/*.png`), captions `video/chaser-demo.srt`, thumbnail `video/chaser-demo-thumb.png`, timeline `video/shots.json`. Ready to upload.
+
 Recording: fully automated and reproducible, no camera or microphone. `PYTHONUTF8=1 python scripts/make_video.py` (needs `pip install playwright edge-tts`, `python -m playwright install chromium`, ffmpeg on PATH) drives the live site in headless Chromium at 1920x1080, narrates each shot with edge-tts (`en-US-AndrewNeural`, -5%), and cuts the shots below plus a 3 s title card and a 3 s end card with ffmpeg into `video/chaser-demo.mp4` (H.264 + AAC), with `chaser-demo.srt`, a 1280x720 thumbnail and stills for the gallery in `video/stills/`. `video/shots.json` has the actual cut. The shot list below is the order the script records (reconciliation and disputes first); `scripts/make_video.py` refuses to assemble if the recorded shots differ from its shot list.
 
 | Time | Shot (on the live site unless noted) | Voice-over |
