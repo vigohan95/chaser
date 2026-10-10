@@ -61,9 +61,12 @@ export async function liveExecute(tool: string, input: unknown): Promise<unknown
   } catch {
     /* some tools return plain text */
   }
-  if (parsed && typeof parsed === "object" && "error" in (parsed as object)) {
-    const err = (parsed as { error: { message?: string } }).error;
-    throw new PayPalApiError(err?.message ?? "PayPal error", parsed);
+  if (parsed && typeof parsed === "object") {
+    const p = parsed as { error?: { message?: string; type?: string }; ok?: boolean; code?: string; status?: number; message?: string };
+    // run() wraps unknown failures as { error: { message, type } } ...
+    if (p.error) throw new PayPalApiError(p.error.message ?? "PayPal error", parsed);
+    // ... and PayPal HTTP errors as its LlmError toJSON(): { ok: false, status, code, message }
+    if (p.ok === false) throw new PayPalApiError(`${p.code ?? "PAYPAL_ERROR"}${p.status ? ` ${p.status}` : ""}: ${p.message ?? "PayPal error"}`, parsed);
   }
   return parsed;
 }
