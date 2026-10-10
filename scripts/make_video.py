@@ -53,15 +53,18 @@ SHOT_TAIL = 0.6  # every shot runs at least narration + this
 # Shot list: title shown in the caption strip + voice-over (SUBMIT.md section B, numbers verified on the UI).
 # ----------------------------------------------------------------------------------------------------------
 SHOTS: list[tuple[str, str]] = [
-    ("Command center", "Freelancers spend hours a week chasing money. Chaser is an AI agent that collects it for them, on PayPal, inside rules they set. Everything here is sandbox money."),
-    ("AG Grid + chasing policy", "The command center is an AG Grid: twenty invoices, overdue days colour-coded, and the chasing policy is just configuration. Friendly nudge at three days, firm at ten, final at twenty-one. Accept disputes under twenty dollars. Ask me before any refund over five hundred."),
-    ("Create and send an invoice", "Tell it what you did. It looks up the client, creates the PayPal invoice through the PayPal Agent Toolkit and sends it. Every step lands in an audit timeline with the reason it was allowed."),
-    ("Run collections", "Run collections. The agent applies the policy and writes a different reminder for each client: a final notice for Acme at thirty-seven days, a gentle nudge for Northwind at five. Each one quotes the actual work and the pay link."),
-    ("Reconcile payments", "Three payments came in without an invoice link. The agent matches them, including a partial payment and one payment covering two invoices, explains each match, and records them on PayPal."),
-    ("PayPal webhook", "When a client pays, PayPal's webhook hits Chaser and the invoice is reconciled on the spot."),
-    ("Approval card", "Outside the policy, it asks. A six-hundred-dollar refund is over my limit, so I get a card with the reason. I approve, and it finishes the job."),
-    ("Disputes", "Disputes: the fifteen-dollar one is accepted automatically, the four-hundred-eighty-dollar one gets an evidence pack drafted for me to submit."),
-    ("One agent, your rules", "Invoices, payments, disputes, tracking, subscriptions, reporting: one agent, your rules. Built on the PayPal sandbox with the PayPal Agent Toolkit, the Vercel AI SDK and AG Grid."),
+    # NOTE: order and narration follow SUBMIT.md section B (2026-10-10): reconciliation and disputes lead. The
+    # per-shot click sequences further down still implement the previous order and need re-cutting to match.
+    ("Match review", "Money arrived on PayPal. Which invoice is it? Chaser is an AI agent that answers that, on PayPal, inside rules you write down. Everything here is sandbox money."),
+    ("Edit the split, record", "One payment, two invoices: the agent proposes the split and explains it. This is an AG Grid, so I can change any allocation before it touches PayPal. If my edit over-allocates, the grid stops me. If it exceeds what an invoice is owed, the policy stops the agent: it comes back as a card citing the rule."),
+    ("Approval ledger", "Approve, and it finishes. Every decision lands in the approval ledger with the policy field it was made on. The policy is data: change a number, and the next decision changes with it."),
+    ("Policy as data", "Here is that policy. Accept disputes under twenty dollars. Show me evidence packs before they go. Ask before any refund over five hundred."),
+    ("Disputes: evidence pack to PayPal", "Disputes. The fifteen-dollar one is under my limit: accepted. The four-hundred-eighty-dollar one gets an evidence pack built from what Chaser already knows: the invoice line items, the payment record, the reminder history. I read the statement, approve, and it goes to PayPal through the Disputes API. Not a draft to paste somewhere: submitted."),
+    ("PayPal sandbox", "The same code runs against the real PayPal sandbox through the PayPal Agent Toolkit: these invoices, reminders and transactions exist on PayPal."),
+    ("Run collections", "Collections, inside the cadence: friendly at three days, firm at ten, final at twenty-one, never more than four. Each reminder quotes the actual work and the pay link."),
+    ("Create and send an invoice", "And the ordinary things: tell it what you did and it creates and sends the PayPal invoice."),
+    ("Approval card: deny", "Outside the policy, it asks. I deny this one, and that is on the record too."),
+    ("One agent, your rules", "Reconciliation you can edit, policy as data, disputes handled end to end. Built on the PayPal sandbox with the PayPal Agent Toolkit, the Vercel AI SDK and AG Grid."),
 ]
 
 # ----------------------------------------------------------------------------------------------------------
@@ -466,6 +469,9 @@ def record(work: Path, out: Path, url: str, narration: list[float], headed: bool
         shots = rec.shots
         frames = rec.frames
         browser.close()
+
+    if len(shots) != len(SHOTS):
+        raise SystemExit(f"Recorded {len(shots)} shots but SHOTS has {len(SHOTS)} entries: the click sequence in record() must be re-cut to match the shot list / narration (see SUBMIT.md section B).")
 
     (work / "frames.json").write_text(json.dumps(frames), encoding="utf-8")
     (work / "shots.json").write_text(json.dumps(shots, indent=1), encoding="utf-8")

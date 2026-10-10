@@ -1,110 +1,142 @@
 # Chaser
 
-**An AI agent that collects your invoices on PayPal, within the rules you set.**
+**Chaser matches every PayPal payment to the right invoice and handles what comes after.**
 
-Freelancers and small merchants do not struggle to *send* invoices. They struggle with everything after: chasing late payers, matching money that arrives to the invoice it belongs to, and dealing with disputes. Chaser is an accounts-receivable agent that does that work on PayPal: it creates and sends invoices, sends policy-driven reminders written for each client, reconciles payments (including partial and multi-invoice payments), triages disputes, adds shipment tracking and sets up retainers. You set the policy; the agent acts inside it and asks you at the edges.
+Money arrives on PayPal and the work starts: a $1,400 transfer that covers two invoices, a $300 "part payment, rest next week", a $480 dispute from a client who already approved the work. Chaser is an accounts-receivable agent that does that work on PayPal, inside a policy you write as data:
 
-Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/) on the **PayPal sandbox** (play money only), with the **PayPal Agent Toolkit**, the **Vercel AI SDK** and **AG Grid Community**.
+- **Reconciliation you can edit.** The agent matches unlinked payments to open invoices (exact, partial, one payment across several invoices) with a confidence and a reason for each. An AG Grid **match review** lets you change any allocation, split a payment, or point it at a different invoice before it is recorded on PayPal.
+- **Policy as data, decisions as a ledger.** Every tool call goes through a pure policy function that answers allow / ask / deny and cites the policy field it used. The **approval ledger** shows each decision with that field (`approvals.refundsOver = $500`), who decided (policy or you), and why.
+- **Dispute evidence packs, end to end.** For a dispute above your auto-accept limit the agent assembles the evidence from what it already knows (invoice line items, payment record, shipment tracking, reminder history), drafts the seller statement, shows you the pack, and submits it through the **PayPal Disputes API** (`provide-evidence`, or `send-message` while it is an inquiry).
+
+It also chases overdue invoices with reminders written from each invoice's actual line items, creates and sends invoices from a sentence, adds shipment tracking, and sets up retainers as subscriptions. Anything outside the policy becomes an approval card.
+
+Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/) on the **PayPal sandbox** (play money only), with the **PayPal Agent Toolkit**, the **Vercel AI SDK** and **AG Grid Community**. Live demo: **https://chaser-six.vercel.app** (demo data, no sign-in, every visitor gets an isolated copy).
 
 ## 60-second tour (no keys needed)
 
 ```bash
 npm install
-cp .env.example .env.local     # MOCK_PAYPAL=1 is the default: built-in mock PayPal + keyless planner
+cp .env.example .env.local     # demo data + keyless planner by default
 npm run dev                    # http://localhost:3000
 ```
 
-Then, in the command center:
+1. **Payments tab.** Three PayPal payments arrived without an invoice link. The match review already shows the agent's proposal: an exact match (95%), a partial payment on the oldest open invoice (70%), and one $1,400 payment split across two invoices (90%), each with its reasoning. Change the $900 / $500 split to $1,000 / $400 and the over-allocation guard turns the lines red; make it $1,000 / $400 against $900 / $500 balances and click **Record 4 allocations**.
+2. **Approval card.** Three lines are recorded straight away (policy: `reconciliation.autoRecordExactMatches`, `autoRecordPartials`). The $1,000 line exceeds the $900 still due on INV-0015, so it comes back as an approval card quoting the rule. Approve or deny; the agent continues either way and the remainder stays visible as **unapplied** until it is placed.
+3. **Approvals tab.** The ledger: `allowed` by policy, `approval required`, `approved by you`, `denied`, each row with the policy field and value it was decided on. Open **Policy**, change a threshold, and the next decision changes with it.
+4. **Review disputes.** The $15 dispute is accepted automatically (`disputes.autoAcceptUnder = $20`). For the $480 one the agent builds the evidence pack and, because `disputes.submitEvidence = ask`, shows it as an approval card with the full statement; approve and it goes to PayPal through the Disputes API, the dispute moves to *under PayPal review*, and the Disputes tab shows the submitted pack.
+5. **Run collections.** Reminders at friendly / firm / final stages, one per client, quoting the work, the amount and the pay link, within the cadence limits (`reminders.*`).
+6. Type `I finished the logo package for Acme Corp, $1,200, net 15`: lookup, `create_invoice`, `send_invoice`.
+7. Type `Refund $600 on INV-0007`: over `approvals.refundsOver`, so an approval card.
+8. **Fire webhook**: a real `INVOICING.INVOICE.PAID` event goes through the signature-checking handler and the invoice flips to PAID.
 
-1. **Run collections** - the agent applies your reminder policy to 20 demo invoices and sends friendly / firm / final reminders that quote the actual work, amount and pay link. Each action lands in the audit timeline with its reason.
-2. **Reconcile payments** - three PayPal payments arrived without an invoice link: an exact match, a partial payment, and one payment covering two invoices. The agent explains each match and records it; the grid turns green.
-3. **Review disputes** - a $15 dispute is accepted automatically (under your limit); a $480 dispute gets an evidence pack drafted for you.
-4. Type `I finished the logo package for Acme Corp, $1,200, net 15` - the agent looks the client up, creates the invoice and sends it.
-5. Type `Refund $600 on INV-0007` - that is over your $500 refund threshold, so an **approval card** appears. Approve or deny; the agent continues either way and records your decision.
-6. Pick an invoice in **Simulate: client pays** and click **Fire webhook** - a real `INVOICING.INVOICE.PAID` webhook goes through the handler and the invoice flips to PAID.
-
-Add a free Gemini or Groq key and the same tools are driven by a real LLM; add PayPal sandbox credentials and the same agent acts on real sandbox invoices.
+Add a free Gemini or Groq key and the same tools are driven by a real LLM; add PayPal sandbox credentials and the same agent acts on real sandbox invoices, payments and disputes.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   subgraph UI["Command center (Next.js 16 App Router, React 19)"]
-    G["AG Grid Community<br/>invoices / transactions / disputes"]
+    MR["AG Grid match review<br/>editable allocations, split, CSV"]
+    G["AG Grid invoices / payments / disputes"]
+    L["Approval ledger<br/>decision + policy field"]
     D["Agent drawer<br/>useChat + approval cards"]
     P["Policy panel"]
-    A["Audit timeline"]
   end
 
   subgraph API["Route handlers"]
-    AG["/api/agent<br/>streamText + toolApproval"]
+    AG["/api/agent<br/>streamText + toolApproval + daily LLM caps"]
+    RC["/api/reconcile<br/>match preview (pure)"]
     ST["/api/state"]
     WH["/api/webhooks/paypal<br/>signature verified"]
     CR["/api/cron/collections<br/>daily sweep (Vercel Cron)"]
-    PO["/api/policy"]
   end
 
   subgraph Agent["Agent core (Vercel AI SDK 7)"]
     LLM["LLM: Gemini / Groq / Nemotron<br/>or keyless rule planner"]
-    POL["Policy engine<br/>allow / ask / deny"]
-    LT["Local tools<br/>propose_collections, match_payments,<br/>lookup_customer, draft_dispute_evidence"]
+    POL["Policy engine<br/>allow / ask / deny + rule citation"]
+    LT["Local tools<br/>match_payments, propose_collections,<br/>draft_dispute_evidence, submit_dispute_evidence"]
     TK["PayPal Agent Toolkit tools<br/>invoices, reminders, payments, refunds,<br/>disputes, tracking, catalog, subscriptions, reporting"]
   end
 
   subgraph PP["PayPal"]
-    SB["Sandbox REST APIs<br/>(or built-in mock)"]
+    SB["Sandbox REST APIs<br/>(or built-in demo data)"]
+    DS["Disputes API<br/>provide-evidence / send-message"]
     EV["Webhooks"]
   end
 
+  MR --> RC
+  MR -->|"record these allocations"| D
   D -->|UI messages| AG
-  G -->|inline edits, selection| ST
-  P --> PO
+  P --> ST
   AG --> LLM
   LLM -->|tool calls| POL
   POL -->|allowed / approved| TK
   POL -->|needs human| D
+  POL --> L
   LLM --> LT
+  LT --> DS
   TK --> SB
-  EV --> WH --> A
+  EV --> WH --> L
   CR --> LLM
   ST --> G
 ```
 
-**Where state lives.** The server is stateless between requests: the browser keeps the demo snapshot it last received (policy, invoices, transactions, audit) and sends it with every call; each route hydrates it into an `AsyncLocalStorage` context for that request and returns the updated snapshot (the agent stream carries it as a final `data-snapshot` part). That makes the hosted demo safe on serverless (no cross-instance drift, no database) and gives every visitor an isolated copy of the business. In sandbox mode PayPal is the source of truth for invoices, transactions and disputes; the snapshot carries only the policy, reminder history, chase overrides and audit log. Server-to-server callers (PayPal webhooks, Vercel Cron) use a process-global store.
+**How a tool call flows.** The model proposes a tool call. The AI SDK's `toolApproval` hook asks Chaser's policy engine (`src/lib/policy/engine.ts`), a pure function over the current invoices, disputes and the user's policy. It answers *allow* (execute now), *ask* (stream an `approval-requested` part; the UI renders a card; the SDK resumes after the user's answer) or *deny* (the model receives an `execution-denied` result with the reason and reports it), and every answer names the policy field it came from. Executions, approval requests, your answers and denials are written to the audit log; the Approvals tab is that log filtered to decisions.
 
-**How a tool call flows.** The model proposes a tool call. The AI SDK's `toolApproval` hook asks Chaser's policy engine (`src/lib/policy/engine.ts`), a pure function over the current invoices, disputes and the user's policy. It answers *allow* (execute now), *ask* (stream an `approval-requested` part; the UI renders a card; the SDK resumes after the user's answer) or *deny* (the model receives an `execution-denied` result with the reason and reports it). Every execution and every decision is written to the audit timeline with its reason.
+**Reconciliation.** `match_payments` (`src/lib/agent/reconcile.ts`) is a pure matcher over unapplied payments and open invoices: invoice number in the memo, same payer + exact balance, same payer + a subset of invoices summing to the amount, same payer + partial on the oldest invoice, amount-only hints at low confidence. One PayPal transaction can carry several allocations; what is not yet applied stays in the match review. Recording goes through `record_payment_for_invoice` (Invoicing v2), so PayPal's invoice balances are the source of truth.
+
+**Where state lives.** The server is stateless between requests: the browser keeps the snapshot it last received (policy, demo data, overlays, audit) and sends it with every call; each route hydrates it into an `AsyncLocalStorage` context and returns the updated snapshot (the agent stream carries it as a final `data-snapshot` part). That makes the hosted demo serverless-safe and gives every visitor an isolated copy of the business. In sandbox mode PayPal is the source of truth for invoices, transactions and disputes; the snapshot keeps only what PayPal does not store for us (policy, reminder history, chase overrides, evidence drafts and submission records, audit). Server-to-server callers (PayPal webhooks, Vercel Cron) use a process-global store.
 
 ### PayPal capabilities used
 
-All via [`@paypal/agent-toolkit`](https://www.npmjs.com/package/@paypal/agent-toolkit) 1.11.0 unless noted. `configuration.context.sandbox = true` throughout.
+Via [`@paypal/agent-toolkit`](https://www.npmjs.com/package/@paypal/agent-toolkit) 1.11.0 unless noted. `configuration.context.sandbox = true` throughout.
 
 | Area | Tools | Where Chaser uses them |
 |---|---|---|
-| Invoicing v2 | `create_invoice`, `send_invoice`, `send_invoice_reminder`, `list_invoices`, `get_invoice`, `search_invoicing`, `generate_invoice_number`, `generate_invoice_qr_code`, `cancel_sent_invoice`, `record_payment_for_invoice`, `record_refund_for_invoice`, `setup_invoice_auto_reminders` | creating/sending invoices from natural language; policy-driven chasing; reconciliation write-back |
-| Transaction Search / Reporting | `list_transactions` | pulling the payment stream that the matcher reconciles against open invoices |
+| Invoicing v2 | `create_invoice`, `send_invoice`, `send_invoice_reminder`, `list_invoices`, `get_invoice`, `search_invoicing`, `generate_invoice_number`, `generate_invoice_qr_code`, `cancel_sent_invoice`, `record_payment_for_invoice`, `record_refund_for_invoice`, `setup_invoice_auto_reminders` | reconciliation write-back (full, partial and split payments); creating/sending invoices from natural language; policy-driven chasing |
+| Transaction Search / Reporting | `list_transactions` | the payment stream the matcher reconciles against open invoices |
+| Disputes v1 | `list_disputes`, `get_dispute`, `accept_dispute_claim` | auto-accepting small disputes; building evidence for the rest |
+| Disputes v1 (REST, not in the toolkit) | `POST /v1/customer/disputes/{id}/provide-evidence` (multipart), `POST .../send-message` | `submit_dispute_evidence`: sends the evidence pack (evidence type, tracking info, seller notes), gated by `disputes.submitEvidence` |
 | Payments v2 | `create_refund` | refunds (gated by amount) |
-| Disputes v1 | `list_disputes`, `get_dispute`, `accept_dispute_claim` | auto-accepting small disputes; evidence drafting for large ones |
-| Shipment Tracking | `create_shipment_tracking`, `get_shipment_tracking` | "shipped the brand book, UPS 1Z..." |
+| Shipment Tracking | `create_shipment_tracking`, `get_shipment_tracking` | "shipped the brand book, UPS 1Z..."; tracking also feeds the evidence pack |
 | Catalog + Subscriptions | `create_product`, `list_products`, `create_subscription_plan`, `list_subscription_plans`, `create_subscription`, `show_subscription_details`, `cancel_subscription` | monthly retainers for regular clients |
 | Webhooks (REST) | `POST /v1/notifications/verify-webhook-signature` | `/api/webhooks/paypal` verifies and applies `INVOICING.INVOICE.PAID`, `PAYMENT.CAPTURE.COMPLETED`, `CUSTOMER.DISPUTE.CREATED/RESOLVED`, `BILLING.SUBSCRIPTION.ACTIVATED` |
-| OAuth (REST) | `POST /v1/oauth2/token` | client-credentials token for the webhook verification call |
+| OAuth (REST) | `POST /v1/oauth2/token` | client-credentials token for the REST calls above |
+
+### The policy (data, not prompt)
+
+```jsonc
+{
+  "reminders":      { "friendlyAfterDays": 3, "firmAfterDays": 10, "finalAfterDays": 21, "minDaysBetweenReminders": 3, "maxReminders": 4 },
+  "disputes":       { "autoAcceptUnder": 20, "submitEvidence": "ask" },          // ask | auto | never
+  "approvals":      { "refundsOver": 500, "invoicesOver": 5000, "alwaysAsk": ["cancel_sent_invoice", "delete_invoice", "cancel_subscription"], "neverAllow": [] },
+  "reconciliation": { "autoRecordExactMatches": true, "autoRecordPartials": true, "amountTolerance": 0.01 },
+  "currency": "USD"
+}
+```
+
+`src/lib/policy/schema.ts` (zod) validates it; `src/lib/policy/engine.ts` evaluates it; the Policy panel edits it; the ledger cites it. The LLM never decides what it may do alone.
 
 ### AI
 
 - **Agent loop**: Vercel AI SDK 7 `streamText` with `stopWhen: stepCountIs(14)`, tools, and the `toolApproval` hook for human-in-the-loop; UI with `@ai-sdk/react` `useChat`, typed tool parts and `addToolApprovalResponse`.
 - **Models (all free tiers, no card)**: Google AI Studio Gemini (`@ai-sdk/google`), Groq (`@ai-sdk/groq`), Nebius Token Factory NVIDIA Nemotron (`@ai-sdk/openai-compatible`). Pick one by setting its key.
-- **Keyless planner**: `src/lib/llm/mock-model.ts` is a `LanguageModelV3` that plans tool calls with rules instead of weights. It follows the same playbook as the system prompt, so the full product (agent loop, policy gate, approval cards, audit) runs with zero API keys. Swap in a real model by setting a key; nothing else changes.
-- **Deterministic helpers the model calls**: `propose_collections` (policy -> reminder plan), `match_payments` (exact / partial / combined-invoice matching with confidence and reasoning), `lookup_customer`, `draft_dispute_evidence`, `summarize_receivables`, `set_chase_override`.
+- **Daily caps for a hosted key**: `/api/agent` keeps per-visitor and global per-day buckets (`AGENT_LLM_RUNS_PER_IP_PER_DAY`, default 20; `AGENT_LLM_RUNS_PER_DAY`, default 300; UTC days, per instance). Past the cap the request runs on the keyless planner and the drawer says so, so a free-tier key on a public URL cannot be burned.
+- **Keyless planner**: `src/lib/llm/mock-model.ts` is a `LanguageModelV3` that plans tool calls with rules instead of weights. It follows the same playbook as the system prompt, so the full product (agent loop, policy gate, approval cards, ledger) runs with zero API keys and the end-to-end tests run the real SDK loop.
+- **Deterministic helpers the model calls**: `match_payments`, `propose_collections`, `draft_dispute_evidence`, `submit_dispute_evidence`, `lookup_customer`, `summarize_receivables`, `set_chase_override`. Small models behave because the planning is done in code and the model acts on structured results.
 
 ### AG Grid (Community, MIT)
 
-The product's main surface is the invoice grid: sorting and filtering on every column, quick filter, multi-row checkbox selection (feeds "Chase selected" / "Pause selected" / "Ask about selected"), inline editing of the per-invoice **Chasing** policy with `agSelectCellEditor` (persisted via `PATCH /api/invoices/:id` and audited), custom cell renderers (status badges, overdue colouring, pay links), `rowClassRules` that tint overdue rows by severity, a pinned totals row, the Theming API (`themeQuartz` with light/dark parts), and `getRowId` for live transaction updates while the agent works. Transactions and disputes get their own grids; selecting a dispute reveals the drafted evidence pack.
+- **Match review** (`src/components/MatchReview.tsx`): one row per proposed allocation; `agSelectCellEditor` to re-point a line at another open invoice, an editable amount with `valueSetter` and `enableCellChangeFlash`, "Split payment" to add a line, per-payment over-allocation guard via `cellClass` / `rowClassRules`, pinned totals, CSV export of the reconciliation (`exportDataAsCsv`), and a Record button that hands the reviewed lines to the agent.
+- **Approval ledger** (`src/components/ApprovalLedger.tsx`): decisions with the policy field and its current value, filterable and exportable.
+- **Invoice grid**: sorting/filtering/quick filter, multi-row checkbox selection that drives "Chase selected" / "Pause selected", inline editing of the per-invoice chasing policy with `agSelectCellEditor` (persisted and audited), custom renderers, `rowClassRules` by overdue severity, pinned totals, Theming API (`themeQuartz` light/dark), `getRowId` live updates.
+- **Payments and disputes grids**: allocation chips and unapplied badges per transaction; selecting a dispute opens the evidence pack with a submit action.
 
 ## Setup
 
-### 1. Mock mode (default)
+### 1. Demo data (default)
 
-No accounts needed. `MOCK_PAYPAL=1` serves 20 realistic invoices, 11 transactions, 2 disputes and 1 shipment from memory; with no LLM key the keyless planner runs the agent. **Reset demo** restores the data.
+No accounts needed. With no PayPal credentials (or `MOCK_PAYPAL=1`) Chaser serves 20 realistic invoices, 11 transactions, 2 disputes and 1 shipment from memory with PayPal-shaped responses; with no LLM key the keyless planner runs the agent. **Reset demo** restores the data.
 
 ### 2. Real LLM (free)
 
@@ -116,53 +148,55 @@ GROQ_API_KEY=...                   # https://console.groq.com/keys      (default
 NEBIUS_API_KEY=...                 # Token Factory, NEBIUS_MODEL for a Nemotron model id
 ```
 
-`LLM_MODEL` overrides the model id for whichever provider is active.
+`LLM_MODEL` overrides the model id for whichever provider is active. On a public deployment also set `AGENT_LLM_RUNS_PER_IP_PER_DAY` / `AGENT_LLM_RUNS_PER_DAY` (see above).
 
 ### 3. PayPal sandbox
 
-1. [developer.paypal.com/dashboard](https://developer.paypal.com/dashboard/) -> Apps & Credentials -> **Sandbox** -> Create App -> copy **Client ID** and **Secret** into `.env.local` as `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`, and set `MOCK_PAYPAL=0`.
-2. `npm run seed` creates the demo invoices in your sandbox through the toolkit (`--limit=N`, `--no-send`).
-3. Pay one as the sandbox *personal* account at [sandbox.paypal.com](https://www.sandbox.paypal.com/) (Testing Tools -> Sandbox Accounts has the login) and watch it reconcile.
+1. [developer.paypal.com/dashboard](https://developer.paypal.com/dashboard/) -> Apps & Credentials -> **Sandbox** -> your app -> copy **Client ID** and **Secret** into `.env.local` as `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`, and set `MOCK_PAYPAL=0`.
+2. `npm run seed -- --limit=8` creates the demo invoices in your sandbox through the toolkit (`--no-send` keeps them as drafts).
+3. Pay one as the sandbox *personal* account at [sandbox.paypal.com](https://www.sandbox.paypal.com/) (Testing Tools -> Sandbox Accounts has the login); click **Refresh** and watch it reconcile. Open a dispute on a paid transaction from the sandbox buyer's Resolution Center to try the evidence pack.
 4. Webhooks: in the app's settings add a webhook for your deployed `/api/webhooks/paypal` with the event types listed above and set `PAYPAL_WEBHOOK_ID`. Locally, a free tunnel (`cloudflared tunnel --url http://localhost:3000`) works.
 
 ### 4. Deploy (Vercel Hobby, free)
 
-Import the repo, add the same environment variables, deploy. `vercel.json` schedules `/api/cron/collections` daily (set `CRON_SECRET`). The cron run is unattended: it only performs policy-allowed actions and leaves anything that needs you in the audit timeline.
+Import the repo, add the environment variables you want, deploy. `vercel.json` schedules `/api/cron/collections` daily (set `CRON_SECRET`). The cron run is unattended: it only performs policy-allowed actions and leaves anything that needs you in the ledger.
 
 ## Scripts
 
 ```bash
 npm run dev        # Next.js dev server
 npm run build      # production build (passes with zero config)
-npm test           # 42 vitest tests: policy engine, chasing planner, reconciliation, tool schemas, end-to-end agent loop
+npm test           # 69 vitest tests: policy engine + rule citations, matcher, split allocations, match-review round trip,
+                   # evidence pack + Disputes API call path, LLM caps, end-to-end agent loop, serverless snapshot isolation
 npm run typecheck  # tsc --noEmit
 npm run lint       # eslint (Next + React Compiler rules)
 npm run seed       # seed the PayPal sandbox
-python scripts/make_video.py   # demo video: Playwright drives the live app, edge-tts narrates, ffmpeg cuts (see the script header)
+python scripts/make_video.py   # demo video: Playwright drives the live app, edge-tts narrates, ffmpeg cuts
 ```
 
 ## Sponsor prize mapping
 
 | Prize | Why Chaser qualifies |
 |---|---|
-| **Top 3 (Technological implementation, design, impact, innovation, presentation)** | Complete product, not a PoC: policy configuration, approval cards, audit trail, webhooks, cron, tests, mock mode. Solves a real, daily pain for freelancers (late payment). |
-| **Best Use of Agentic Commerce** | The agent transacts on PayPal: it creates and sends invoices, sends reminders, records payments, issues refunds, accepts disputes, adds tracking and creates subscriptions, with a user-defined policy deciding what it may do alone. |
-| **Best Use of PayPal + AI** | Eight toolkit areas (invoicing, reminders, reporting, payments, disputes, tracking, catalog, subscriptions) plus webhooks, all driven by an LLM agent with human-in-the-loop approvals. The LLM also writes the reminder copy from the invoice context. |
-| **Best Demo Delivery** | Scripted 3-minute end-to-end story (see `SUBMIT.md`); everything in the video reproduces locally with `npm run dev` and no keys. |
-| **Best Use of AG Grid** | The grid *is* the product: policy edited inline per row, selection drives agent actions, live updates as the agent works, custom renderers, row rules, pinned totals, theming API. |
+| **Top 3** | A complete product around a real daily pain (money arrives, which invoice is it; a dispute opens, what now): editable reconciliation, policy as data with a cited ledger, dispute evidence through the Disputes API, webhooks, cron, tests, demo mode. |
+| **Best Use of PayPal + AI** | Invoicing v2, Transaction Search, Payments v2, Disputes v1 (including `provide-evidence`, which the toolkit does not expose), Shipment Tracking, Catalog, Subscriptions and Webhooks, all driven by an LLM agent whose every action is policy-gated and audited. |
+| **Best Use of AG Grid** | The grid is where the human works: the match review edits what the agent proposed before it touches PayPal; the ledger makes policy decisions inspectable; inline policy edits per invoice; selection drives agent actions. |
+| **Best Use of Agentic Commerce** | A seller-side agent that transacts on PayPal (invoices, reminders, payment records, refunds, dispute responses, tracking, subscriptions) within user-defined limits. |
+| **Best Demo Delivery** | 3-minute end-to-end story (`SUBMIT.md`); everything reproduces locally with `npm run dev` and no keys. |
 
 ## Security and scope
 
 - Sandbox only. Every number in the demo is play money; the UI says so.
-- No secrets in the repo; `.env*` is git-ignored. Webhooks are signature-verified before anything is applied.
-- Money-moving actions outside the policy need an explicit click. Unattended runs (cron) never perform them.
-- Not a mobile app; no real funds are ever moved.
+- No secrets in the repo; `.env*` is git-ignored (only `.env.example` is tracked). Webhooks are signature-verified before anything is applied.
+- Money-moving actions outside the policy need an explicit click. Unattended runs (cron) never perform them. Evidence submission is "ask" by default because it is a statement made on the seller's behalf.
+- A hosted LLM key is protected by daily caps; the demo falls back to the keyless planner.
 
 ## Notes on the PayPal Agent Toolkit (things we learned)
 
 - `@paypal/agent-toolkit@1.11.0` builds its tools for Vercel AI SDK **v4** (`parameters`, `maxSteps`); the current SDK is **v7** (`inputSchema`, `stopWhen`, `toolApproval`). Chaser keeps the toolkit's zod schemas and descriptions verbatim and re-wraps them (`src/lib/agent/tools.ts`), so the model sees the official tool definitions.
 - `create_invoice` has no `payment_term`; terms go in the note (and `update_invoicing` can set them later). `items[].quantity` and all money values are **strings**.
 - `accept_dispute_claim.note` is validated against `^[A-Za-z0-9_-]{1,255}$` (no spaces). The system prompt tells the model.
+- There is no toolkit tool for `provide-evidence` / `send-message`; `src/lib/paypal/rest.ts` calls them directly (multipart `input` part for evidence) with the same app credentials.
 - `get_merchant_insights` throws in sandbox mode; Chaser's `summarize_receivables` computes the metrics locally instead.
 - `list_transactions` (Transaction Search) accepts at most a 31-day window per call; sandbox reporting can lag, so webhooks are the primary reconciliation trigger.
 
