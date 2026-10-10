@@ -1,5 +1,5 @@
 import type { Invoice, Transaction } from "../paypal/types";
-import { isOpenInvoice, round2 } from "../paypal/types";
+import { isOpenInvoice, round2, unappliedAmount } from "../paypal/types";
 
 export type MatchKind = "exact" | "partial" | "combined" | "amount-only";
 
@@ -43,8 +43,10 @@ export function matchTransactions(transactions: Transaction[], invoices: Invoice
   const unmatched: ReconcileResult["unmatched"] = [];
   const claimed = new Set<string>();
 
+  // A payment is a candidate while part of it is unapplied (never linked by PayPal, or only partly allocated here).
   const candidates = transactions
-    .filter((t) => t.type === "PAYMENT" && t.status === "S" && !t.invoice_id && t.amount > 0)
+    .map((t) => ({ ...t, amount: unappliedAmount(t) }))
+    .filter((t) => t.amount > 0.01)
     .sort((a, b) => b.amount - a.amount);
 
   for (const t of candidates) {

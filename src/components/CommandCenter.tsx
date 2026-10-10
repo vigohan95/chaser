@@ -5,7 +5,7 @@ import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalRespons
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { overdueDays } from "@/lib/agent/chase";
 import type { Invoice, StatePayload } from "@/lib/paypal/types";
-import { isOpenInvoice } from "@/lib/paypal/types";
+import { isOpenInvoice, unappliedAmount } from "@/lib/paypal/types";
 import { DEFAULT_POLICY, type Policy } from "@/lib/policy/schema";
 import type { ReconcileResult } from "@/lib/agent/reconcile";
 import AgentDrawer, { type ChatMessage } from "./AgentDrawer";
@@ -158,7 +158,7 @@ export default function CommandCenter() {
       overdueCount: overdue.length,
       collected: view.transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && new Date(t.date).getTime() >= since).reduce((a, t) => a + t.amount, 0),
       disputes: view.disputes.filter((d) => d.status !== "RESOLVED").length,
-      unmatched: view.transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && !t.invoice_id).length,
+      unmatched: view.transactions.filter((t) => unappliedAmount(t) > 0.01).length,
     };
   }, [view, now]);
 
@@ -235,6 +235,7 @@ export default function CommandCenter() {
       </header>
 
       {loadError && <div className="border-b border-red-300 bg-red-50 px-4 py-1 text-xs text-bad dark:bg-red-950/30">Something went wrong: {loadError}</div>}
+      {view?.notice && <div className="border-b border-amber-300 bg-amber-50 px-4 py-1 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">{view.notice}</div>}
 
       <div className="flex min-h-0 flex-1">
         <main className="flex min-w-0 flex-1 flex-col gap-3 p-4">

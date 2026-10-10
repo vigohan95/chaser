@@ -2,7 +2,7 @@
  * One entry point for "what does the business look like right now", in either mode.
  * Mock: straight from the in-memory store. Sandbox: PayPal Agent Toolkit list calls + local overlay.
  */
-import { isMockLlm, isMockPayPal } from "../env";
+import { isMockLlm, isMockPayPal, sandboxRequestedWithoutCredentials } from "../env";
 import { getStore, overlayFor } from "../store";
 import { liveExecute, mapDispute, mapInvoice, mapTransaction } from "./live";
 import { mockExecute } from "./mock";
@@ -20,7 +20,7 @@ export function llmLabel(): string {
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return "gemini-2.5-flash";
   if (process.env.GROQ_API_KEY) return "groq/openai/gpt-oss-120b";
   if (process.env.NEBIUS_API_KEY) return "nebius/nvidia/NVIDIA-Nemotron";
-  return "mock planner";
+  return "rule planner (no LLM key)";
 }
 
 /** Execute a PayPal tool in whichever backend is active. */
@@ -28,7 +28,7 @@ export async function execute(tool: string, input: unknown): Promise<unknown> {
   return currentMode() === "mock" ? mockExecute(tool, input) : liveExecute(tool, input);
 }
 
-let sandboxCache: { at: number; version: number; invoices: Invoice[]; transactions: Transaction[]; disputes: Dispute[] } | undefined;
+let sandboxCache: { at: number; version: number; invoices: Invoice[]; transactions: Transaction[]; disputes: Dispute[]; errors: string[] } | undefined;
 const SANDBOX_TTL_MS = 20_000;
 
 async function sandboxLists() {
@@ -41,12 +41,16 @@ async function sandboxLists() {
     liveExecute("list_transactions", { start_date: start.toISOString(), end_date: end.toISOString(), transaction_status: "S", page_size: 100, page: 1 }),
     liveExecute("list_disputes", { page_size: 50, page: 1 }),
   ]);
-  const pick = (r: PromiseSettledResult<unknown>, key: string): unknown[] => {
-    if (r.status !== "fulfilled") return [];
+  const errors: string[] = [];
+  const pick = (r: PromiseSettledResult<unknown>, key: string, what: string): unknown[] => {
+    if (r.status !== "fulfilled") {
+      errors.push(`${what}: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+      return [];
+    }
     const v = (r.value as Record<string, unknown>)?.[key];
     return Array.isArray(v) ? v : [];
   };
-  const invoices = pick(inv, "items").map(mapInvoice).map((i) => {
+  const invoices = pick(inv, "items", "list_invoices").map(mapInvoice).map((i) => {
     const o = overlayFor(i.id);
     return { ...i, reminders: o.reminders, chase_override: o.chase_override };
   });
@@ -54,8 +58,9 @@ async function sandboxLists() {
     at: Date.now(),
     version: store.version,
     invoices,
-    transactions: pick(txn, "transaction_details").map(mapTransaction),
-    disputes: pick(dis, "items").map(mapDispute).map((d) => ({ ...d, ...store.disputeOverlay[d.id] })),
+    transactions: pick(txn, "transaction_details", "list_transactions").map(mapTransaction),
+    disputes: pick(dis, "items", "list_disputes").map(mapDispute).map((d) => ({ ...d, ...store.disputeOverlay[d.id] })),
+    errors,
   };
   return sandboxCache;
 }
@@ -76,8 +81,10 @@ export async function getState(): Promise<CommandCenterState> {
   const base = { mode, llm: llmLabel(), now: new Date().toISOString(), audit: store.audit };
   if (mode === "mock") {
     const m = store.mock;
-    return { ...base, invoices: m.invoices, transactions: m.transactions, disputes: m.disputes, trackings: m.trackings, plans: m.plans, subscriptions: m.subscriptions };
+    const notice = sandboxRequestedWithoutCredentials() ? "MOCK_PAYPAL=0 but PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET are empty, so demo data is served. Add the sandbox app credentials to .env.local and restart." : undefined;
+    return { ...base, notice, invoices: m.invoices, transactions: m.transactions, disputes: m.disputes, trackings: m.trackings, plans: m.plans, subscriptions: m.subscriptions };
   }
   const lists = await sandboxLists();
-  return { ...base, invoices: lists.invoices, transactions: lists.transactions, disputes: lists.disputes, trackings: store.mock.trackings, plans: [], subscriptions: [] };
+  const notice = lists.errors.length ? `PayPal sandbox: ${lists.errors.join(" | ")}` : undefined;
+  return { ...base, notice, invoices: lists.invoices, transactions: lists.transactions, disputes: lists.disputes, trackings: store.mock.trackings, plans: [], subscriptions: [] };
 }

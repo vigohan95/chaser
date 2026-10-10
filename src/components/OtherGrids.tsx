@@ -4,13 +4,17 @@ import { AgGridReact } from "ag-grid-react";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
 import { useMemo, useState } from "react";
 import type { Dispute, Invoice, Subscription, SubscriptionPlan, Transaction } from "@/lib/paypal/types";
+import { unappliedAmount } from "@/lib/paypal/types";
 import { shortDate, usd, useGridTheme } from "./grid";
 
-type TxRow = Transaction & { invoice_number: string; matched: boolean };
+type TxRow = Transaction & { invoice_number: string; matched: boolean; unapplied: number };
 
 export function TransactionGrid({ transactions, invoices }: { transactions: Transaction[]; invoices: Invoice[] }) {
   const theme = useGridTheme();
-  const rows = useMemo<TxRow[]>(() => transactions.map((t) => ({ ...t, invoice_number: invoices.find((i) => i.id === t.invoice_id)?.invoice_number ?? "", matched: !!t.invoice_id })), [transactions, invoices]);
+  const rows = useMemo<TxRow[]>(
+    () => transactions.map((t) => ({ ...t, invoice_number: t.allocations?.length ? t.allocations.map((a) => a.invoice_number).join(" + ") : (invoices.find((i) => i.id === t.invoice_id)?.invoice_number ?? ""), matched: !!t.invoice_id || (t.allocations?.length ?? 0) > 0, unapplied: unappliedAmount(t) })),
+    [transactions, invoices],
+  );
   const cols = useMemo<ColDef<TxRow>[]>(
     () => [
       { field: "date", headerName: "Date", width: 110, valueFormatter: (p) => shortDate(p.value), sort: "desc" },
@@ -24,9 +28,22 @@ export function TransactionGrid({ transactions, invoices }: { transactions: Tran
       {
         field: "invoice_number",
         headerName: "Invoice",
-        width: 130,
+        width: 170,
         cellRenderer: (p: ICellRendererParams<TxRow, string>) =>
-          p.data?.matched ? <span className="chip">{p.value}</span> : p.data?.type === "PAYMENT" ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">UNMATCHED</span> : null,
+          p.data?.allocations?.length ? (
+            <span className="flex flex-wrap gap-1">
+              {p.data.allocations.map((a) => (
+                <span key={a.invoice_id + a.amount} className="chip" title={usd(a.amount, p.data?.currency)}>
+                  {a.invoice_number}
+                </span>
+              ))}
+              {p.data.unapplied > 0.01 && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{usd(p.data.unapplied, p.data.currency)} UNAPPLIED</span>}
+            </span>
+          ) : p.data?.matched ? (
+            <span className="chip">{p.value}</span>
+          ) : p.data?.type === "PAYMENT" && p.data.status === "S" ? (
+            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">UNMATCHED</span>
+          ) : null,
       },
       { field: "status", headerName: "Status", width: 90, valueFormatter: (p) => ({ S: "Success", P: "Pending", D: "Denied", V: "Reversed" })[p.value as string] ?? p.value },
     ],
@@ -39,8 +56,10 @@ type DisputeRow = Dispute & { invoice_number: string };
 
 export function DisputeGrid({ disputes, invoices, onAsk, busy }: { disputes: Dispute[]; invoices: Invoice[]; onAsk?: (text: string) => void; busy?: boolean }) {
   const theme = useGridTheme();
-  const [selected, setSelected] = useState<DisputeRow | undefined>();
+  const [selectedId, setSelectedId] = useState<string | undefined>();
   const rows = useMemo<DisputeRow[]>(() => disputes.map((d) => ({ ...d, invoice_number: invoices.find((i) => i.id === d.invoice_id)?.invoice_number ?? "" })), [disputes, invoices]);
+  // Look the selection up in the current rows so the detail panel follows live updates (draft built, pack submitted).
+  const selected = useMemo(() => rows.find((r) => r.id === selectedId), [rows, selectedId]);
   const cols = useMemo<ColDef<DisputeRow>[]>(
     () => [
       { field: "id", headerName: "Dispute", width: 160, cellClass: "font-mono text-xs" },
@@ -64,7 +83,7 @@ export function DisputeGrid({ disputes, invoices, onAsk, busy }: { disputes: Dis
   return (
     <div className="flex h-full flex-col gap-2">
       <div className="min-h-0 flex-1">
-        <AgGridReact<DisputeRow> theme={theme} rowData={rows} columnDefs={cols} defaultColDef={{ sortable: true, filter: true, resizable: true }} getRowId={(p) => p.data.id} rowSelection={{ mode: "singleRow", checkboxes: false, enableClickSelection: true }} onSelectionChanged={(e) => setSelected(e.api.getSelectedRows()[0])} />
+        <AgGridReact<DisputeRow> theme={theme} rowData={rows} columnDefs={cols} defaultColDef={{ sortable: true, filter: true, resizable: true }} getRowId={(p) => p.data.id} rowSelection={{ mode: "singleRow", checkboxes: false, enableClickSelection: true }} onSelectionChanged={(e) => setSelectedId(e.api.getSelectedRows()[0]?.id)} />
       </div>
       {selected && selected.status !== "RESOLVED" && (
         <div className="max-h-64 overflow-auto rounded-md border border-border bg-panel p-3 text-xs">

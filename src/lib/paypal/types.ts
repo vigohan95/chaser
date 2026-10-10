@@ -75,6 +75,16 @@ export interface Transaction {
   memo?: string;
   invoice_id?: string; // set when PayPal links the payment to an invoice
   capture_id?: string;
+  /** Local overlay: how much of this payment Chaser has applied to which invoices (partial / split reconciliation). */
+  allocations?: Array<{ invoice_id: string; invoice_number: string; amount: number }>;
+}
+
+/** Part of a successful payment that is not yet applied to any invoice (0 when PayPal linked it itself). */
+export function unappliedAmount(t: Pick<Transaction, "type" | "status" | "amount" | "invoice_id" | "allocations">): number {
+  if (t.type !== "PAYMENT" || t.status !== "S" || t.amount <= 0) return 0;
+  if (t.invoice_id && !t.allocations?.length) return 0;
+  const applied = (t.allocations ?? []).reduce((a, x) => a + x.amount, 0);
+  return round2(Math.max(0, t.amount - applied));
 }
 
 export type DisputeStatus =
@@ -163,6 +173,8 @@ export interface AuditEntry {
 export interface CommandCenterState {
   mode: "mock" | "sandbox";
   llm: string;
+  /** Operator-facing warning (e.g. sandbox list call failed, credentials missing). */
+  notice?: string;
   now: string;
   invoices: Invoice[];
   transactions: Transaction[];

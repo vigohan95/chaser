@@ -5,7 +5,7 @@ import type { CellClassParams, CellValueChangedEvent, ColDef, ICellRendererParam
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReconcileResult } from "@/lib/agent/reconcile";
 import type { Invoice, Transaction } from "@/lib/paypal/types";
-import { isOpenInvoice, round2 } from "@/lib/paypal/types";
+import { isOpenInvoice, round2, unappliedAmount } from "@/lib/paypal/types";
 import { shortDate, usd, useGridTheme } from "./grid";
 
 /** One editable allocation line: "this much of this payment goes to this invoice". */
@@ -67,7 +67,7 @@ export default function MatchReview({ transactions, invoices, fetchMatches, onRe
   const [rows, setRows] = useState<AllocationRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [edited, setEdited] = useState(0);
-  const unlinked = useMemo(() => transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && !t.invoice_id).length, [transactions]);
+  const unlinked = useMemo(() => transactions.filter((t) => unappliedAmount(t) > 0.01).length, [transactions]);
   const openInvoices = useMemo(() => invoices.filter(isOpenInvoice), [invoices]);
 
   const load = useCallback(async () => {
@@ -92,14 +92,14 @@ export default function MatchReview({ transactions, invoices, fetchMatches, onRe
       { field: "transaction_id", headerName: "Payment", width: 165, cellClass: "font-mono text-xs", pinned: "left" },
       { field: "date", headerName: "Date", width: 90, valueFormatter: (p) => shortDate(p.value) },
       { field: "payer_email", headerName: "Payer", width: 210, tooltipField: "memo" },
-      { field: "payment", headerName: "Paid", width: 100, type: "rightAligned", valueFormatter: (p) => usd(p.value) },
+      { field: "payment", headerName: "Unapplied", width: 105, type: "rightAligned", valueFormatter: (p) => usd(p.value), headerTooltip: "Part of the payment not yet applied to an invoice" },
       {
         field: "kind",
         headerName: "Match",
         width: 120,
         cellRenderer: (p: ICellRendererParams<AllocationRow, string>) => {
           const r = p.data;
-          if (!r) return null;
+          if (!r || p.node.rowPinned) return null;
           const tone = r.kind === "unmatched" ? "text-bad" : r.confidence >= 0.6 ? "text-ok" : "text-warn";
           return (
             <span className={`chip ${tone}`}>
@@ -126,7 +126,7 @@ export default function MatchReview({ transactions, invoices, fetchMatches, onRe
           return true;
         },
         cellClass: "cursor-pointer",
-        cellRenderer: (p: ICellRendererParams<AllocationRow, string>) => (p.value ? <span className="chip">{p.value} &#9662;</span> : <span className="text-muted">pick &#9662;</span>),
+        cellRenderer: (p: ICellRendererParams<AllocationRow, string>) => (p.node.rowPinned ? <span className="text-muted">{p.value}</span> : p.value ? <span className="chip">{p.value} &#9662;</span> : <span className="text-muted">pick &#9662;</span>),
         enableCellChangeFlash: true,
       },
       { field: "balance", headerName: "Balance due", width: 110, type: "rightAligned", valueFormatter: (p) => (p.data?.invoice_number ? usd(p.value) : "") },
@@ -189,7 +189,7 @@ export default function MatchReview({ transactions, invoices, fetchMatches, onRe
       <div className="flex flex-wrap items-center gap-2">
         <div className="text-sm">
           <span className="font-semibold">Match review</span>
-          <span className="ml-2 text-xs text-muted">{unlinked === 0 ? "Every successful payment is linked to an invoice." : `${unlinked} payment${unlinked === 1 ? "" : "s"} arrived without an invoice link. Edit the invoice or the amount of any line, split a payment across invoices, then record.`}</span>
+          <span className="ml-2 text-xs text-muted">{unlinked === 0 ? "Every successful payment is applied to an invoice." : `${unlinked} payment${unlinked === 1 ? "" : "s"} with money not yet applied to an invoice. Edit the invoice or the amount of any line, split a payment across invoices, then record.`}</span>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
           <button className="btn" onClick={load} disabled={loading || busy}>

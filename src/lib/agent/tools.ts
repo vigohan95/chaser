@@ -56,9 +56,13 @@ function summarize(value: unknown, max = 400): unknown {
   }
 }
 
-async function logExecution(name: string, input: unknown, output: unknown, error?: string) {
+async function evaluateNow(name: string, input: unknown) {
   const [invoices, disputes] = await Promise.all([getInvoices(), getDisputes()]);
-  const ev = evaluateAction(name, input, { policy: getStore().policy, invoices, disputes });
+  return evaluateAction(name, input, { policy: getStore().policy, invoices, disputes });
+}
+
+/** `ev` is the decision taken *before* execution (the same one the toolApproval gate saw). */
+function logExecution(name: string, input: unknown, ev: ReturnType<typeof evaluateAction>, output: unknown, error?: string) {
   audit({
     actor: "agent",
     tool: name,
@@ -91,14 +95,15 @@ export function buildTools(): ToolSet {
       description: r.description,
       inputSchema: r.parameters,
       execute: async (input: unknown) => {
+        const ev = await evaluateNow(name, input);
         try {
           const output = await execute(name, input);
           noteReminderOverlay(name, input);
-          await logExecution(name, input, output);
+          logExecution(name, input, ev, output);
           return output;
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e);
-          await logExecution(name, input, undefined, message);
+          logExecution(name, input, ev, undefined, message);
           return { error: message };
         }
       },

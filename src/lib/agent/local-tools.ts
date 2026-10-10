@@ -8,7 +8,7 @@ import { merchantProfile } from "../env";
 import { currentMode, execute, getDisputes, getInvoices, getTransactions } from "../paypal/backend";
 import { evaluateAction } from "../policy/engine";
 import { findInvoice as findMockInvoice, setChaseOverride } from "../paypal/mock";
-import { isOpenInvoice, money, round2 } from "../paypal/types";
+import { isOpenInvoice, money, round2, unappliedAmount } from "../paypal/types";
 import { audit, bump, disputeOverlayFor, getStore, overlayFor } from "../store";
 import { overdueDays, planCollections } from "./chase";
 import { buildEvidencePack } from "./evidence";
@@ -56,7 +56,7 @@ export const localTools = {
         overdue_invoices: overdue.length,
         collected_last_30_days: round2(transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && new Date(t.date).getTime() >= since).reduce((a, t) => a + t.amount, 0)),
         open_disputes: disputes.filter((d) => d.status !== "RESOLVED").length,
-        unlinked_payments: transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && !t.invoice_id).length,
+        unlinked_payments: transactions.filter((t) => unappliedAmount(t) > 0.01).length,
         by_client: byClient,
         oldest_overdue: overdue.sort((a, b) => a.due_date.localeCompare(b.due_date)).slice(0, 5).map((i) => ({ invoice_number: i.invoice_number, client: i.client.business, due: i.due, overdue_days: overdueDays(i, now) })),
       };

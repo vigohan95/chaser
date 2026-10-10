@@ -6,7 +6,7 @@
 import { bump, getStore } from "../store";
 import { invoiceId, isoDate, paypalFee, txnId } from "./fixtures";
 import type { ChaseOverride, ChaseStage, Dispute, Invoice, InvoiceItem, Subscription, SubscriptionPlan, Tracking, Transaction } from "./types";
-import { isOpenInvoice, round2 } from "./types";
+import { isOpenInvoice, round2, unappliedAmount } from "./types";
 
 type Input = Record<string, unknown>;
 
@@ -119,7 +119,10 @@ export function recordPayment(inv: Invoice, amount: number, opts: { method: stri
   const s = getStore();
   let t = opts.transaction;
   if (t) {
-    t.invoice_id = inv.id;
+    // Apply (part of) an existing payment: one PayPal transaction can settle several invoices, or part of one.
+    t.allocations = [...(t.allocations ?? []), { invoice_id: inv.id, invoice_number: inv.invoice_number, amount: amt }];
+    const applied = round2(t.allocations.reduce((a, x) => a + x.amount, 0));
+    if (applied >= t.amount - 0.01) t.invoice_id = t.allocations.length === 1 ? inv.id : t.allocations[0].invoice_id;
   } else {
     t = {
       id: txnId(`${inv.id}-${s.mock.seq++}`),
@@ -279,7 +282,7 @@ export async function mockExecute(tool: string, rawInput: unknown): Promise<unkn
       const inv = findInvoice(str(input.invoice_id));
       if (!isOpenInvoice(inv)) throw new MockPayPalError(`Invoice ${inv.invoice_number} is ${inv.status}`, "INVALID_STATE");
       const amt = amountValue(input.amount) ?? inv.due;
-      const existing = typeof input.payment_id === "string" ? m.transactions.find((t) => t.id === input.payment_id && !t.invoice_id) : undefined;
+      const existing = typeof input.payment_id === "string" ? m.transactions.find((t) => t.id === input.payment_id && unappliedAmount(t) > 0.01) : undefined;
       const t = recordPayment(inv, amt, { method: str(input.method, "OTHER"), note: typeof input.note === "string" ? input.note : undefined, date: typeof input.payment_date === "string" ? input.payment_date : undefined, transaction: existing });
       return { payment_id: t.id, invoice_id: inv.id, status: inv.status, paid_amount: { currency_code: inv.currency, value: inv.paid.toFixed(2) }, due_amount: { currency_code: inv.currency, value: inv.due.toFixed(2) } };
     }

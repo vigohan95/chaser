@@ -1,10 +1,30 @@
-import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
+import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, getToolName, isToolUIPart, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { agentSetup } from "@/lib/agent/run";
+import { getDisputes, getInvoices } from "@/lib/paypal/backend";
+import { evaluateAction } from "@/lib/policy/engine";
+import { audit, getStore } from "@/lib/store";
 import { readBody, statePayload, withSnapshot } from "@/lib/api";
 import { isMockLlm } from "@/lib/env";
 import { clientIp, takeLlmRun } from "@/lib/llm/quota";
 
 export const maxDuration = 60;
+
+/** The user's Approve / Deny answers arrive as tool parts in state "approval-responded"; ledger them once each. */
+async function auditApprovalResponses(messages: UIMessage[]) {
+  const store = getStore();
+  const seen = new Set(store.audit.map((a) => (a.output as { approval_id?: string } | undefined)?.approval_id).filter(Boolean));
+  for (const m of messages) {
+    if (m.role !== "assistant") continue;
+    for (const part of m.parts) {
+      if (!isToolUIPart(part) || part.state !== "approval-responded" || seen.has(part.approval.id)) continue;
+      const tool = getToolName(part);
+      const [invoices, disputes] = await Promise.all([getInvoices(), getDisputes()]);
+      const ev = evaluateAction(tool, part.input, { policy: store.policy, invoices, disputes });
+      audit({ actor: "user", tool, action: `${ev.summary} - ${part.approval.approved ? "approved" : "denied"} by you`, decision: part.approval.approved ? "approved" : "denied", reason: part.approval.reason ?? ev.reason, rule: ev.rule, input: part.input, output: { approval_id: part.approval.id } });
+      seen.add(part.approval.id);
+    }
+  }
+}
 
 /**
  * Chat endpoint. Body: { messages: UIMessage[], snapshot?: Store }.
@@ -18,6 +38,7 @@ export async function POST(req: Request) {
   const quota = isMockLlm() ? undefined : takeLlmRun(clientIp(req));
   const capped = quota !== undefined && !quota.allowed;
   return withSnapshot(body, async () => {
+    await auditApprovalResponses(messages);
     const setup = agentSetup({ forceMock: capped });
     const modelMessages = await convertToModelMessages(messages, { tools: setup.tools, ignoreIncompleteToolCalls: true });
     const stream = createUIMessageStream({
