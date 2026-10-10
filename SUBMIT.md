@@ -84,7 +84,7 @@ If the sandbox insert is not recorded, drop shot 1:35-1:52 and extend the Disput
 1. ~~Devpost: register~~ done.
 2. ~~Vercel: import repo~~ done (https://chaser-six.vercel.app, auto-deploys `main`).
 3. **Gemini on the hosted demo (5 min, free, recommended)**: https://aistudio.google.com/apikey -> Create API key -> Vercel -> Project `chaser` -> Settings -> Environment Variables -> add `GOOGLE_GENERATIVE_AI_API_KEY` (Production) and optionally `AGENT_LLM_RUNS_PER_IP_PER_DAY=20`, `AGENT_LLM_RUNS_PER_DAY=300` -> Deployments -> Redeploy. The drawer then says `model: gemini-2.5-flash`; past the caps visitors get the keyless planner, so the free tier cannot be burned. Do **not** put PayPal credentials on Vercel (strangers would write to your sandbox).
-4. **Sandbox proof (local, ~25 min)**: section D. Needed for the README "Verified on PayPal sandbox" section and the 17 s video insert.
+4. **Sandbox proof (local, ~25 min)**: section D. Needed for the README "Verified on PayPal sandbox" section and the 17 s video insert. Status 2026-10-10: not yet run - `.env.local` has `MOCK_PAYPAL=0` / `ALLOW_SANDBOX_SEED=1` but `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` were still empty after a 60-minute wait. Paste them, then either tell Claude or run `npm run seed -- --limit=8` and `npm run sandbox:check` yourself (evidence lands in `docs/sandbox-evidence/`).
 5. **Video**: re-cut `scripts/make_video.py` to the section B order (the narration strings are updated; the click sequence is not), run it, upload to YouTube as Public (thumbnail `video/chaser-demo-thumb.png`, captions `video/chaser-demo.srt`).
 6. **Devpost submission**: paste section A, upload the 6 gallery images, opt in to the sponsor prizes, add the YouTube link, submit before 2026-11-12 12:00 PST.
 
