@@ -138,6 +138,7 @@ npm test           # 42 vitest tests: policy engine, chasing planner, reconcilia
 npm run typecheck  # tsc --noEmit
 npm run lint       # eslint (Next + React Compiler rules)
 npm run seed       # seed the PayPal sandbox
+python scripts/make_video.py   # demo video: Playwright drives the live app, edge-tts narrates, ffmpeg cuts (see the script header)
 ```
 
 ## Sponsor prize mapping

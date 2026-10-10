@@ -61,7 +61,7 @@ Multi-merchant auth (PayPal Log In), evidence submission through the Disputes AP
 
 ## B. Demo video plan (final; target 2:50, hard cap 2:58)
 
-Recording setup: Chrome at 1440x900, dark-mode off, https://chaser-six.vercel.app freshly opened in a new tab (fresh snapshot). OBS screen capture at 1080p30, narration recorded separately (your voice or edge-tts `en-US-GuyNeural`), no music, cut in a free editor (Shotcut/DaVinci) or `ffmpeg`. Keep the cursor slow; let each result sit for a beat. If you record the sandbox segment (section D), insert it at 1:48 and trim 10 s elsewhere.
+Recording: fully automated and reproducible, no camera or microphone. `PYTHONUTF8=1 python scripts/make_video.py` (needs `pip install playwright edge-tts`, `python -m playwright install chromium`, ffmpeg on PATH) drives the live site in headless Chromium at 1920x1080, narrates each shot with edge-tts (`en-US-AndrewNeural`, -5%), and cuts the 9 shots below plus a 3 s title card and a 3 s end card with ffmpeg into `video/chaser-demo.mp4` (H.264 + AAC, ~2:11), with `chaser-demo.srt`, a 1280x720 thumbnail and 1280x720 stills for the gallery in `video/stills/`. The timings in the table are the plan; `video/shots.json` has the actual cut. If you record the sandbox segment (section D), insert it after shot 5 and keep the total under 2:58.
 
 | Time | Shot (on the live site unless noted) | Voice-over |
 |---|---|---|
@@ -81,7 +81,7 @@ Optional sandbox insert (adds credibility for "Best Use of PayPal + AI"; 15 s, r
 
 1. ~~Devpost: register~~ done.
 2. ~~Vercel: import repo~~ done (https://chaser-six.vercel.app).
-3. **Record the video** following section B (nothing to install: the live site is enough). Upload to YouTube as Public.
+3. **Video**: `video/chaser-demo.mp4` is produced by `scripts/make_video.py` (section B); re-run it if the UI changes. Upload to YouTube as Public (use `video/chaser-demo-thumb.png` as the thumbnail, `video/chaser-demo.srt` as captions).
 4. **Optional sandbox segment** (recommended, ~25 min, local only): see section D.
 5. **Devpost submission**: paste section A, upload gallery images, opt in to the sponsor prizes, add the YouTube link, submit before 2026-11-12 12:00 PST.
 
