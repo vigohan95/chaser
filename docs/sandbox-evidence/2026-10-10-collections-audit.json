@@ -1,0 +1,140 @@
+{
+  "captured_at": "2026-10-10T06:38:46",
+  "mode": "sandbox",
+  "audit": [
+    {
+      "ts": "2026-10-10T13:38:41.126Z",
+      "actor": "agent",
+      "tool": "send_invoice_reminder",
+      "action": "Remind Acme Corp about INV-0001",
+      "decision": "allowed",
+      "reason": "Within reminder cadence (0/4 sent).",
+      "rule": "reminders.maxReminders",
+      "input": "{\"invoice_id\":\"INV2-RV76-J5VE-F7Z5-APL8\",\"subject\":\"Final notice: invoice INV-0001 - $4,800.00\",\"note\":\"Hi Dana,\\n\\nThis is a final reminder for invoice INV-0001 (Website redesign - phase 1), $4,800.00, now 37 days overdue. If I do not hear back within 5 business days I will have to pause further work and apply the late fee in our agreement. I would much rather sort this out - reply here or pay vi...",
+      "output": ""
+    },
+    {
+      "ts": "2026-10-10T13:38:41.099Z",
+      "actor": "agent",
+      "tool": "send_invoice_reminder",
+      "action": "Remind Bluebird Studio about INV-0002",
+      "decision": "allowed",
+      "reason": "Within reminder cadence (0/4 sent).",
+      "rule": "reminders.maxReminders",
+      "input": "{\"invoice_id\":\"INV2-9YBQ-JNYE-L5MN-MQG4\",\"subject\":\"Overdue: invoice INV-0002 - $2,400.00, 15 days past due\",\"note\":\"Hi Priya,\\n\\nInvoice INV-0002 (Brand identity package) for $2,400.00 is now 15 days past its 2026-09-25 due date. Could you let me know when payment will be made, or if anything is blocking it on your side?\\n\\nPay securely here: https://www.sandbox.paypal.com/invoice/p/#9YBQJNYEL5MN...",
+      "output": ""
+    },
+    {
+      "ts": "2026-10-10T13:38:41.032Z",
+      "actor": "agent",
+      "tool": "send_invoice_reminder",
+      "action": "Remind Northwind Traders about INV-0003",
+      "decision": "allowed",
+      "reason": "Within reminder cadence (0/4 sent).",
+      "rule": "reminders.maxReminders",
+      "input": {
+        "invoice_id": "INV2-N4JP-35BM-SKFL-4DVE",
+        "subject": "Quick nudge: invoice INV-0003 ($1,500.00)",
+        "note": "Hi Olu,\n\nHope the Monthly design retainer is working out well. Invoice INV-0003 for $1,500.00 was due on 2026-10-05 - this may have slipped through, so here is the link again.\n\nPay securely here: https://www.sandbox.paypal.com/invoice/p/#N4JP35BMSKFL4DVE\n\nThanks,\nHan"
+      },
+      "output": ""
+    },
+    {
+      "ts": "2026-10-10T13:38:41.019Z",
+      "actor": "agent",
+      "tool": "send_invoice_reminder",
+      "action": "Remind Solstice Fitness about INV-0006",
+      "decision": "allowed",
+      "reason": "Within reminder cadence (0/4 sent).",
+      "rule": "reminders.maxReminders",
+      "input": "{\"invoice_id\":\"INV2-SW7C-XNJ3-BGBL-88RB\",\"subject\":\"Overdue: invoice INV-0006 - $1,000.00, 10 days past due\",\"note\":\"Hi Tomas,\\n\\nInvoice INV-0006 (Landing page) for $1,000.00 is now 10 days past its 2026-09-30 due date. Could you let me know when payment will be made, or if anything is blocking it on your side?\\n\\nPay securely here: https://www.sandbox.paypal.com/invoice/p/#SW7CXNJ3BGBL88RB\\n\\nBe...",
+      "output": ""
+    },
+    {
+      "ts": "2026-10-10T13:38:40.952Z",
+      "actor": "agent",
+      "tool": "send_invoice_reminder",
+      "action": "Remind Bluebird Studio about INV-0010",
+      "decision": "allowed",
+      "reason": "Within reminder cadence (0/4 sent).",
+      "rule": "reminders.maxReminders",
+      "input": "{\"invoice_id\":\"INV2-SUGV-GSTF-ZGG2-P5P8\",\"subject\":\"Final notice: invoice INV-0010 - $420.00\",\"note\":\"Hi Priya,\\n\\nThis is a final reminder for invoice INV-0010 (Social media templates), $420.00, now 30 days overdue. If I do not hear back within 5 business days I will have to pause further work and apply the late fee in our agreement. I would much rather sort this out - reply here or pay via the l...",
+      "output": ""
+    },
+    {
+      "ts": "2026-10-10T13:38:34.665Z",
+      "actor": "system",
+      "tool": null,
+      "action": "Connected to the PayPal sandbox: invoices, transactions and disputes are listed from PayPal through the Agent Toolkit.",
+      "decision": "info",
+      "reason": null,
+      "rule": null,
+      "input": null,
+      "output": null
+    }
+  ],
+  "overlay": {
+    "INV2-SUGV-GSTF-ZGG2-P5P8": {
+      "reminders": [
+        {
+          "at": "2026-10-10T13:38:40.951Z",
+          "stage": "final",
+          "subject": "Final notice: invoice INV-0010 - $420.00"
+        }
+      ],
+      "chase_override": "default"
+    },
+    "INV2-LA6L-2CXN-UM83-A22N": {
+      "reminders": [],
+      "chase_override": "default"
+    },
+    "INV2-SW7C-XNJ3-BGBL-88RB": {
+      "reminders": [
+        {
+          "at": "2026-10-10T13:38:41.019Z",
+          "stage": "firm",
+          "subject": "Overdue: invoice INV-0006 - $1,000.00, 10 days past due"
+        }
+      ],
+      "chase_override": "default"
+    },
+    "INV2-7X4S-X56G-UBX4-4EG6": {
+      "reminders": [],
+      "chase_override": "default"
+    },
+    "INV2-YBWC-KSCV-VAPR-9HPG": {
+      "reminders": [],
+      "chase_override": "default"
+    },
+    "INV2-N4JP-35BM-SKFL-4DVE": {
+      "reminders": [
+        {
+          "at": "2026-10-10T13:38:41.032Z",
+          "stage": "friendly",
+          "subject": "Quick nudge: invoice INV-0003 ($1,500.00)"
+        }
+      ],
+      "chase_override": "default"
+    },
+    "INV2-9YBQ-JNYE-L5MN-MQG4": {
+      "reminders": [
+        {
+          "at": "2026-10-10T13:38:41.099Z",
+          "stage": "firm",
+          "subject": "Overdue: invoice INV-0002 - $2,400.00, 15 days past due"
+        }
+      ],
+      "chase_override": "default"
+    },
+    "INV2-RV76-J5VE-F7Z5-APL8": {
+      "reminders": [
+        {
+          "at": "2026-10-10T13:38:41.126Z",
+          "stage": "final",
+          "subject": "Final notice: invoice INV-0001 - $4,800.00"
+        }
+      ],
+      "chase_override": "default"
+    }
+  }
+}

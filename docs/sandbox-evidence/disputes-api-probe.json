@@ -1,0 +1,36 @@
+{
+  "ran_at": "2026-10-10T13:40:53.709Z",
+  "purpose": "No dispute exists in this sandbox (a buyer must open one), so the Disputes API call path is probed with a non-existent dispute id: a PayPal-authenticated 404 proves OAuth + endpoint + multipart body are accepted up to resource lookup. No success is claimed.",
+  "provide-evidence": {
+    "status": 404,
+    "message": "RESOURCE_NOT_FOUND 404: The specified resource does not exist. (RESOURCE_NOT_FOUND)",
+    "body": {
+      "name": "RESOURCE_NOT_FOUND",
+      "message": "The specified resource does not exist.",
+      "debug_id": "f7054620cd467",
+      "information_link": "https://developer.paypal.com/docs/api/customer-disputes/v1/#errors",
+      "details": [
+        {
+          "issue": "RESOURCE_NOT_FOUND"
+        }
+      ],
+      "links": []
+    }
+  },
+  "send-message": {
+    "status": 404,
+    "message": "RESOURCE_NOT_FOUND 404: The specified resource does not exist. (RESOURCE_NOT_FOUND)",
+    "body": {
+      "name": "RESOURCE_NOT_FOUND",
+      "message": "The specified resource does not exist.",
+      "debug_id": "ca4860aa2bcbe",
+      "information_link": "https://developer.paypal.com/docs/api/customer-disputes/v1/#errors",
+      "details": [
+        {
+          "issue": "RESOURCE_NOT_FOUND"
+        }
+      ],
+      "links": []
+    }
+  }
+}

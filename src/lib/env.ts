@@ -35,11 +35,18 @@ export function paypalEnv() {
 }
 
 export function merchantProfile() {
+  const email = process.env.MERCHANT_EMAIL || "sb-merchant@business.example.com";
   return {
-    businessName: process.env.MERCHANT_BUSINESS_NAME ?? "Vigo Design Studio",
-    givenName: process.env.MERCHANT_GIVEN_NAME ?? "Han",
-    surname: process.env.MERCHANT_SURNAME ?? "Vigo",
-    email: process.env.MERCHANT_EMAIL ?? "sb-merchant@business.example.com",
-    currency: process.env.MERCHANT_CURRENCY ?? "USD",
+    businessName: process.env.MERCHANT_BUSINESS_NAME || "Vigo Design Studio",
+    givenName: process.env.MERCHANT_GIVEN_NAME || "Han",
+    surname: process.env.MERCHANT_SURNAME || "Vigo",
+    email,
+    /**
+     * Invoicing v2 rejects an invoicer email that is not the PayPal account's own ("User is not associated with
+     * paypal based on invoicer email", 422). A placeholder / example address is therefore omitted from create_invoice
+     * and PayPal fills in the account email itself.
+     */
+    invoicerEmail: /\.example(\.com)?$/i.test(email) ? undefined : email,
+    currency: process.env.MERCHANT_CURRENCY || "USD",
   };
 }

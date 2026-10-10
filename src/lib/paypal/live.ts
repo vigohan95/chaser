@@ -94,9 +94,14 @@ export function mapInvoice(pp: unknown): Invoice {
   const dueAmt = o.due_amount !== undefined ? n(j(o.due_amount).value) : round2(Math.max(0, total - paid));
   const links = ((o.links as unknown[] | undefined) ?? []).map(j);
   const id = s(o.id);
-  const view = s(links.find((l) => l.rel === "self")?.href) || `https://www.sandbox.paypal.com/invoice/p/#${id}`;
-  const pay = s(links.find((l) => l.rel === "payer-view")?.href) || `https://www.sandbox.paypal.com/invoice/payerView/details/${id}`;
+  const meta = j(detail.metadata);
+  const host = paypalEnv().sandbox ? "https://www.sandbox.paypal.com" : "https://www.paypal.com";
+  // `links.self` is the API resource; the human-facing pages are in detail.metadata (set once the invoice is sent).
+  const view = s(meta.invoicer_view_url) || `${host}/invoice/details/${id}`;
+  const pay = s(meta.recipient_view_url) || s(links.find((l) => l.rel === "payer-view")?.href) || `${host}/invoice/p/#${id}`;
   const currency = s(detail.currency_code, "USD");
+  // The toolkit's create_invoice has no payment_term, so Chaser writes the terms into the note ("... due yyyy-mm-dd").
+  const noteDue = s(detail.note).match(/due (\d{4}-\d{2}-\d{2})/i)?.[1];
   return {
     id,
     invoice_number: s(detail.invoice_number, id),
@@ -109,7 +114,7 @@ export function mapInvoice(pp: unknown): Invoice {
     refunded,
     due: dueAmt,
     invoice_date: s(detail.invoice_date).slice(0, 10),
-    due_date: s(j(detail.payment_term).due_date, s(detail.invoice_date)).slice(0, 10),
+    due_date: (s(j(detail.payment_term).due_date) || noteDue || s(detail.invoice_date)).slice(0, 10),
     reference: s(detail.reference) || undefined,
     note: s(detail.note) || undefined,
     reminders: [],

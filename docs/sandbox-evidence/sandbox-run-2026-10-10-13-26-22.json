@@ -1,0 +1,524 @@
+{
+  "ran_at": "2026-10-10T13:26:22.152Z",
+  "environment": "sandbox",
+  "base_url": "https://api-m.sandbox.paypal.com",
+  "toolkit": "@paypal/agent-toolkit 1.11.0",
+  "calls": [
+    {
+      "call": "list_invoices",
+      "input": {
+        "page": 1,
+        "page_size": 50,
+        "total_required": true
+      },
+      "ok": true,
+      "ms": 923,
+      "summary": {
+        "count": 8,
+        "invoices": [
+          {
+            "id": "INV2-PQKN-6R7H-PYLJ-CDF4",
+            "number": "INV-0010",
+            "status": "DRAFT",
+            "total": 420,
+            "paid": 0,
+            "due": 420,
+            "due_date": "2026-08-26",
+            "client": "hello@bluebird.example.com",
+            "items": 0
+          },
+          {
+            "id": "INV2-XCNL-GRL5-Z6SG-R4GX",
+            "number": "INV-0006",
+            "status": "DRAFT",
+            "total": 1800,
+            "paid": 0,
+            "due": 1800,
+            "due_date": "2026-08-31",
+            "client": "ops@solsticefit.example.com",
+            "items": 0
+          },
+          {
+            "id": "INV2-6CDA-DCSQ-U5WE-F4F8",
+            "number": "INV-0009",
+            "status": "DRAFT",
+            "total": 750,
+            "paid": 0,
+            "due": 750,
+            "due_date": "2026-10-02",
+            "client": "billing@acme.example.com",
+            "items": 0
+          },
+          {
+            "id": "INV2-WBF2-TC3Q-MRZ2-R4U3",
+            "number": "INV-0005",
+            "status": "DRAFT",
+            "total": 600,
+            "paid": 0,
+            "due": 600,
+            "due_date": "2026-09-30",
+            "client": "jen@juniperbakery.example.com",
+            "items": 0
+          },
+          {
+            "id": "INV2-U8YJ-G9SL-UEDJ-L5NT",
+            "number": "INV-0004",
+            "status": "DRAFT",
+            "total": 950.04,
+            "paid": 0,
+            "due": 950.04,
+            "due_date": "2026-09-24",
+            "client": "accounts@harborfinch.example.com",
+            "items": 0
+          },
+          {
+            "id": "INV2-66Q7-CGN4-CGV9-7P3U",
+            "number": "INV-0003",
+            "status": "DRAFT",
+            "total": 1500,
+            "paid": 0,
+            "due": 1500,
+            "due_date": "2026-09-20",
+            "client": "ap@northwind.example.com",
+            "items": 0
+          },
+          {
+            "id": "INV2-9P3T-KNV4-88Z2-YPLJ",
+            "number": "INV-0001",
+            "status": "DRAFT",
+            "total": 4800,
+            "paid": 0,
+            "due": 4800,
+            "due_date": "2026-08-19",
+            "client": "billing@acme.example.com",
+            "items": 0
+          },
+          {
+            "id": "INV2-CUFW-AJBT-H9FY-F3DD",
+            "number": "INV-0002",
+            "status": "DRAFT",
+            "total": 2400,
+            "paid": 0,
+            "due": 2400,
+            "due_date": "2026-09-10",
+            "client": "hello@bluebird.example.com",
+            "items": 0
+          }
+        ]
+      }
+    },
+    {
+      "call": "list_transactions",
+      "input": {
+        "start_date": "2026-09-09T13:26:21.326Z",
+        "end_date": "2026-10-10T13:26:21.326Z",
+        "transaction_status": "S",
+        "page_size": 100,
+        "page": 1
+      },
+      "ok": false,
+      "ms": 218,
+      "error": "PAYPAL_API_HTTP_ERROR 403: Authorization failed due to insufficient permissions.: Authorization failed due to insufficient permissions."
+    },
+    {
+      "call": "list_disputes",
+      "input": {
+        "page_size": 50,
+        "page": 1
+      },
+      "ok": true,
+      "ms": 310,
+      "summary": {
+        "count": 0,
+        "disputes": []
+      }
+    },
+    {
+      "call": "get_invoice",
+      "input": {
+        "invoice_id": "INV2-PQKN-6R7H-PYLJ-CDF4"
+      },
+      "ok": true,
+      "ms": 296,
+      "summary": {
+        "id": "INV2-PQKN-6R7H-PYLJ-CDF4",
+        "number": "INV-0010",
+        "status": "DRAFT",
+        "total": 420,
+        "due": 420,
+        "items": [
+          {
+            "name": "Social media templates",
+            "description": "Canva pack, 24 layouts",
+            "quantity": 1,
+            "unit_amount": 420
+          }
+        ],
+        "links": {
+          "view": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4",
+          "pay": "https://www.sandbox.paypal.com/invoice/payerView/details/INV2-PQKN-6R7H-PYLJ-CDF4"
+        }
+      }
+    }
+  ],
+  "raw": {
+    "list_invoices": {
+      "total_pages": 1,
+      "total_items": 8,
+      "items": [
+        {
+          "id": "INV2-PQKN-6R7H-PYLJ-CDF4",
+          "status": "DRAFT",
+          "detail": {
+            "currency_code": "USD",
+            "note": "Net terms - due 2026-09-10.",
+            "invoice_number": "INV-0010",
+            "invoice_date": "2026-08-26",
+            "viewed_by_recipient": false,
+            "group_draft": false,
+            "metadata": {
+              "create_time": "2026-10-10T13:25:42Z"
+            }
+          },
+          "invoicer": {
+            "email_address": "sb-merchant@business.example.com"
+          },
+          "primary_recipients": [
+            {
+              "billing_info": {
+                "business_name": "Bluebird Studio",
+                "name": {
+                  "given_name": "Priya",
+                  "surname": "Natarajan",
+                  "full_name": "Priya Natarajan"
+                },
+                "email_address": "hello@bluebird.example.com"
+              }
+            }
+          ],
+          "amount": {
+            "currency_code": "USD",
+            "value": "420.00"
+          },
+          "due_amount": {
+            "currency_code": "USD",
+            "value": "420.00"
+          },
+          "links": [
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4",
+              "rel": "self",
+              "method": "GET"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4/send",
+              "rel": "send",
+              "method": "POST"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4",
+              "rel": "replace",
+              "method": "PUT"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4",
+              "rel": "delete",
+              "method": "DELETE"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4/payments",
+              "rel": "record-payment",
+              "method": "POST"
+            }
+          ],
+          "unilateral": false
+        },
+        {
+          "id": "INV2-XCNL-GRL5-Z6SG-R4GX",
+          "status": "DRAFT",
+          "detail": {
+            "currency_code": "USD",
+            "note": "Net terms - due 2026-09-30.",
+            "invoice_number": "INV-0006",
+            "invoice_date": "2026-08-31",
+            "viewed_by_recipient": false,
+            "group_draft": false,
+            "metadata": {
+              "create_time": "2026-10-10T13:25:41Z"
+            }
+          },
+          "invoicer": {
+            "email_address": "sb-merchant@business.example.com"
+          },
+          "primary_recipients": [
+            {
+              "billing_info": {
+                "business_name": "Solstice Fitness",
+                "name": {
+                  "given_name": "Tomas",
+                  "surname": "Rivera",
+                  "full_name": "Tomas Rivera"
+                },
+                "email_address": "ops@solsticefit.example.com"
+              }
+            }
+          ],
+          "amount": {
+            "currency_code": "USD",
+            "value": "1800.00"
+          },
+          "due_amount": {
+            "currency_code": "USD",
+            "value": "1800.00"
+          },
+          "links": [
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-XCNL-GRL5-Z6SG-R4GX",
+              "rel": "self",
+              "method": "GET"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-XCNL-GRL5-Z6SG-R4GX/send",
+              "rel": "send",
+              "method": "POST"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-XCNL-GRL5-Z6SG-R4GX",
+              "rel": "replace",
+              "method": "PUT"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-XCNL-GRL5-Z6SG-R4GX",
+              "rel": "delete",
+              "method": "DELETE"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-XCNL-GRL5-Z6SG-R4GX/payments",
+              "rel": "record-payment",
+              "method": "POST"
+            }
+          ],
+          "unilateral": false
+        },
+        {
+          "id": "INV2-6CDA-DCSQ-U5WE-F4F8",
+          "status": "DRAFT",
+          "detail": {
+            "currency_code": "USD",
+            "note": "Net terms - due 2026-10-17.",
+            "invoice_number": "INV-0009",
+            "invoice_date": "2026-10-02",
+            "viewed_by_recipient": false,
+            "group_draft": false,
+            "metadata": {
+              "create_time": "2026-10-10T13:25:41Z"
+            }
+          },
+          "invoicer": {
+            "email_address": "sb-merchant@business.example.com"
+          },
+          "primary_recipients": [
+            {
+              "billing_info": {
+                "business_name": "Acme Corp",
+                "name": {
+                  "given_name": "Dana",
+                  "surname": "Whitfield",
+                  "full_name": "Dana Whitfield"
+                },
+                "email_address": "billing@acme.example.com"
+              }
+            }
+          ],
+          "amount": {
+            "currency_code": "USD",
+            "value": "750.00"
+          },
+          "due_amount": {
+            "currency_code": "USD",
+            "value": "750.00"
+          },
+          "links": [
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-6CDA-DCSQ-U5WE-F4F8",
+              "rel": "self",
+              "method": "GET"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-6CDA-DCSQ-U5WE-F4F8/send",
+              "rel": "send",
+              "method": "POST"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-6CDA-DCSQ-U5WE-F4F8",
+              "rel": "replace",
+              "method": "PUT"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-6CDA-DCSQ-U5WE-F4F8",
+              "rel": "delete",
+              "method": "DELETE"
+            },
+            {
+              "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-6CDA-DCSQ-U5WE-F4F8/payments",
+              "rel": "record-payment",
+              "method": "POST"
+            }
+          ],
+          "unilateral": false
+        }
+      ],
+      "links": [
+        {
+          "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices?page=1&page_size=50&total_required=true",
+          "rel": "self",
+          "method": "GET"
+        }
+      ],
+      "_total_in_response": 8
+    },
+    "list_transactions": {
+      "transaction_details": [],
+      "_total_in_response": 0
+    },
+    "list_disputes": {
+      "items": [],
+      "links": [
+        {
+          "href": "https://api.sandbox.paypal.com/v1/customer/disputes?page_size=50&page=1&page_size=50&page=1",
+          "rel": "self",
+          "method": "GET"
+        }
+      ],
+      "_total_in_response": 0
+    },
+    "get_invoice": {
+      "id": "INV2-PQKN-6R7H-PYLJ-CDF4",
+      "status": "DRAFT",
+      "detail": {
+        "currency_code": "USD",
+        "note": "Net terms - due 2026-09-10.",
+        "category_code": "SHIPPABLE",
+        "invoice_number": "INV-0010",
+        "invoice_date": "2026-08-26",
+        "payment_term": {
+          "term_type": "NO_DUE_DATE"
+        },
+        "viewed_by_recipient": false,
+        "group_draft": false,
+        "metadata": {
+          "create_time": "2026-10-10T13:25:42Z",
+          "last_update_time": "2026-10-10T13:25:42Z",
+          "created_by_flow": "REGULAR_SINGLE",
+          "recipient_view_url": "https://www.sandbox.paypal.com/invoice/p/#PQKN6R7HPYLJCDF4",
+          "invoicer_view_url": "https://www.sandbox.paypal.com/invoice/details/INV2-PQKN-6R7H-PYLJ-CDF4",
+          "caller_type": "MCP_INVOICE",
+          "spam_info": {}
+        },
+        "archived": false
+      },
+      "invoicer": {
+        "business_name": "Vigo Design Studio",
+        "name": {
+          "given_name": "Han",
+          "surname": "Vigo",
+          "full_name": "Han Vigo"
+        },
+        "email_address": "sb-merchant@business.example.com"
+      },
+      "primary_recipients": [
+        {
+          "billing_info": {
+            "business_name": "Bluebird Studio",
+            "name": {
+              "given_name": "Priya",
+              "surname": "Natarajan",
+              "full_name": "Priya Natarajan"
+            },
+            "email_address": "hello@bluebird.example.com"
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "ITEM-81N129984Y511271G",
+          "name": "Social media templates",
+          "description": "Canva pack, 24 layouts",
+          "quantity": "1",
+          "unit_amount": {
+            "currency_code": "USD",
+            "value": "420.00"
+          }
+        }
+      ],
+      "configuration": {
+        "tax_calculated_after_discount": false,
+        "tax_inclusive": false,
+        "allow_tip": false,
+        "allow_only_pay_by_bank": false,
+        "allow_vba_payments": false,
+        "save_item_for_future": true,
+        "template_id": "TEMP-6YX32637T0552580D"
+      },
+      "amount": {
+        "breakdown": {
+          "item_total": {
+            "currency_code": "USD",
+            "value": "420.00"
+          },
+          "discount": {
+            "invoice_discount": {
+              "amount": {
+                "currency_code": "USD",
+                "value": "0.00"
+              }
+            },
+            "item_discount": {
+              "currency_code": "USD",
+              "value": "0.00"
+            }
+          },
+          "tax_total": {
+            "currency_code": "USD",
+            "value": "0.00"
+          }
+        },
+        "currency_code": "USD",
+        "value": "420.00"
+      },
+      "due_amount": {
+        "currency_code": "USD",
+        "value": "420.00"
+      },
+      "links": [
+        {
+          "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4",
+          "rel": "self",
+          "method": "GET"
+        },
+        {
+          "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4/send",
+          "rel": "send",
+          "method": "POST"
+        },
+        {
+          "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4",
+          "rel": "replace",
+          "method": "PUT"
+        },
+        {
+          "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4",
+          "rel": "delete",
+          "method": "DELETE"
+        },
+        {
+          "href": "https://api.sandbox.paypal.com/v2/invoicing/invoices/INV2-PQKN-6R7H-PYLJ-CDF4/payments",
+          "rel": "record-payment",
+          "method": "POST"
+        }
+      ],
+      "unilateral": false,
+      "settings": {}
+    }
+  }
+}

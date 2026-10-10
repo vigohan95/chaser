@@ -132,6 +132,25 @@ Via [`@paypal/agent-toolkit`](https://www.npmjs.com/package/@paypal/agent-toolki
 - **Invoice grid**: sorting/filtering/quick filter, multi-row checkbox selection that drives "Chase selected" / "Pause selected", inline editing of the per-invoice chasing policy with `agSelectCellEditor` (persisted and audited), custom renderers, `rowClassRules` by overdue severity, pinned totals, Theming API (`themeQuartz` light/dark), `getRowId` live updates.
 - **Payments and disputes grids**: allocation chips and unapplied badges per transaction; selecting a dispute opens the evidence pack with a submit action.
 
+## Verified on the PayPal sandbox (2026-10-10)
+
+The sandbox path was run against a real PayPal sandbox business account with `MOCK_PAYPAL=0` and the app's own Client ID / Secret (`@paypal/agent-toolkit` 1.11.0, `https://api-m.sandbox.paypal.com`). Evidence (redacted of nothing but credentials, which never leave `.env.local`) is in [`docs/sandbox-evidence/`](docs/sandbox-evidence/): the call-by-call JSON from `npm run sandbox:check`, the audit dump from a real "Run collections", the Disputes API probe, and screenshots of the UI in sandbox mode (file names are the captions of the video drop-in).
+
+| Exercised against PayPal | Result |
+|---|---|
+| `create_invoice` x8 (`npm run seed -- --limit=8`) | 8 invoices created, ids `INV2-…`; the seed is idempotent (re-run deletes stale drafts with `delete_invoice`) |
+| `send_invoice` x8 | all 8 SENT to the demo recipients |
+| `list_invoices`, `get_invoice` | 8 listed; summaries carry no line items, so the command center fetches `get_invoice` per invoice (bounded) |
+| `send_invoice_reminder` x5 from the real agent loop ("Run collections", keyless planner, policy gate, audit) | 5 reminders sent (INV-0001 final, INV-0010 final, INV-0002 firm, INV-0006 firm, INV-0003 friendly); 3 skipped as not yet due; see `2026-10-10-collections-audit.json` |
+| `record_payment_for_invoice` (external $800 on INV-0006) | `payment_id: EXTR-…`, invoice became PARTIALLY_PAID with $1,000 due, visible in the grid |
+| `list_disputes` | 0 disputes (none can be opened from the seller side) |
+| Disputes API `provide-evidence` and `send-message` (plain REST, multipart) | probed with a non-existent dispute id: authenticated `404 RESOURCE_NOT_FOUND` from PayPal for both, i.e. OAuth, endpoint and body are accepted up to resource lookup (`disputes-api-probe.json`). No success claimed |
+| OAuth `v1/oauth2/token` | used by the REST calls above |
+
+**Not exercised (needs a buyer or a dashboard toggle):** `list_transactions` answered `403` because Transaction Search is not enabled on this sandbox app (developer dashboard -> the app -> Features); so reconciliation against real sandbox payments, a buyer paying an invoice, webhooks, refunds (`create_refund`), accepting a dispute and a successful `provide-evidence` were not run against PayPal. Those paths run in demo mode with sandbox-shaped responses and are covered by the test suite.
+
+**What the real responses changed in the code:** Invoicing v2 rejects an `invoicer_email_address` that is not the account's own (`422 User is not associated with paypal based on invoicer email`), so a placeholder merchant email is omitted and PayPal fills in its own; `links[rel=self]` is the API resource, the human pages are `detail.metadata.invoicer_view_url` / `recipient_view_url`; the due date comes from `detail.payment_term.due_date` when set, else from the terms written into the note (the toolkit's `create_invoice` has no `payment_term`); toolkit HTTP errors come back as `{ ok: false, status, code, message }` and are now raised instead of being handed to the mappers.
+
 ## Setup
 
 ### 1. Demo data (default)

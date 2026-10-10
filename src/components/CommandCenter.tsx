@@ -279,7 +279,7 @@ export default function CommandCenter() {
                   {view && t.id === "invoices" ? ` (${openInvoices.length})` : ""}
                   {view && t.id === "payments" && kpis?.unmatched ? ` (${kpis.unmatched})` : ""}
                   {view && t.id === "disputes" && kpis?.disputes ? ` (${kpis.disputes})` : ""}
-                  {view && t.id === "approvals" ? ` (${view.audit.filter((a) => a.actor === "policy" || a.decision === "approved" || a.decision === "denied").length})` : ""}
+                  {view && t.id === "approvals" ? ` (${view.audit.filter((a) => a.actor === "policy" || a.decision === "approved" || a.decision === "denied" || (a.actor === "agent" && a.decision === "allowed" && a.rule)).length})` : ""}
                   {view && t.id === "audit" ? ` (${view.audit.length})` : ""}
                 </button>
               ))}

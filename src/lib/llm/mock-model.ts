@@ -213,7 +213,7 @@ function invoicePlaybook(turn: Turn): Action {
             invoicer_business_name: s(m.businessName, "Vigo Design Studio"),
             invoicer_given_name: s(m.givenName, "Han"),
             invoicer_surname: s(m.surname, "Vigo"),
-            invoicer_email_address: s(m.email, "sb-merchant@business.example.com"),
+            invoicer_email_address: s(m.invoicerEmail) || undefined,
             primary_recipients: [{ billing_info: { business_name: c.business, name: { given_name: c.given_name, surname: c.surname }, email_address: c.email } }],
             items: [{ name: description, quantity: "1", unit_amount: { currency_code: "USD", value: amount.toFixed(2) } }],
           },

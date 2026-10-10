@@ -13,6 +13,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { AuditEntry, ChaseOverride, Dispute, Invoice, Product, ReminderRecord, Subscription, SubscriptionPlan, Tracking, Transaction } from "./paypal/types";
 import { buildDisputes, buildInvoices, buildPlans, buildProducts, buildSubscriptions, buildTrackings, buildTransactions } from "./paypal/fixtures";
 import { DEFAULT_POLICY, parsePolicy, type Policy } from "./policy/schema";
+import { isMockPayPal } from "./env";
 
 export interface Overlay {
   reminders: ReminderRecord[];
@@ -77,7 +78,7 @@ export function createStore(now = new Date(), policy?: Policy): Store {
         id: "a0",
         ts: now.toISOString(),
         actor: "system",
-        action: "Demo data loaded (20 invoices, 11 transactions, 2 disputes, 1 shipment).",
+        action: isMockPayPal() ? "Demo data loaded (20 invoices, 11 transactions, 2 disputes, 1 shipment)." : "Connected to the PayPal sandbox: invoices, transactions and disputes are listed from PayPal through the Agent Toolkit.",
         decision: "info",
       },
     ],

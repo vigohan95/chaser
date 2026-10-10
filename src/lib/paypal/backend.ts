@@ -44,13 +44,32 @@ async function sandboxLists() {
   const errors: string[] = [];
   const pick = (r: PromiseSettledResult<unknown>, key: string, what: string): unknown[] => {
     if (r.status !== "fulfilled") {
-      errors.push(`${what}: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      // Transaction Search is a per-app feature; a 403 here means it is not ticked under the sandbox app's Features.
+      errors.push(what === "list_transactions" && /403/.test(msg) ? "Transaction Search is not enabled for this sandbox app (403): developer.paypal.com -> the app -> Features -> tick Transaction Search. Payments cannot be listed until then; webhooks and invoice statuses still work." : `${what}: ${msg}`);
       return [];
     }
     const v = (r.value as Record<string, unknown>)?.[key];
     return Array.isArray(v) ? v : [];
   };
-  const invoices = pick(inv, "items", "list_invoices").map(mapInvoice).map((i) => {
+  // list_invoices returns summaries without line items; fetch the detail for each (bounded) so the grid, the
+  // reminder copy and the evidence packs can quote the actual work. Previously fetched details are reused.
+  const summaries = pick(inv, "items", "list_invoices").map(mapInvoice);
+  const details = await Promise.all(
+    summaries.slice(0, 40).map(async (i) => {
+      if (i.items.length) return i;
+      const prev = sandboxCache?.invoices.find((x) => x.id === i.id);
+      if (prev?.items.length) return { ...i, items: prev.items };
+      try {
+        const full = mapInvoice(await liveExecute("get_invoice", { invoice_id: i.id }));
+        return { ...i, items: full.items, links: full.links, note: full.note ?? i.note, due_date: full.due_date };
+      } catch (e) {
+        errors.push(`get_invoice ${i.invoice_number}: ${e instanceof Error ? e.message : String(e)}`);
+        return i;
+      }
+    }),
+  );
+  const invoices = [...details, ...summaries.slice(40)].map((i) => {
     const o = overlayFor(i.id);
     return { ...i, reminders: o.reminders, chase_override: o.chase_override };
   });

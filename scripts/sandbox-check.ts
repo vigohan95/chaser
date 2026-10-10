@@ -2,7 +2,8 @@
  * Exercise the real PayPal sandbox path and write evidence: `npm run sandbox:check` (reads .env.local).
  *
  *   --remind=<invoice_id>      send one reminder through send_invoice_reminder
- *   --record=<invoice_id>:<transaction_id>:<amount>   record a payment on an invoice (reconciliation write-back)
+ *   --record=<invoice_id>:<transaction_id>:<amount>[:<method>]   record a payment on an invoice (reconciliation write-back;
+ *                              method PAYPAL needs a real transaction id, BANK_TRANSFER / CASH / CHECK / OTHER record an external payment)
  *   --evidence=<dispute_id>    build the evidence pack and submit it via the Disputes API (provide-evidence / send-message)
  *   --out=<dir>                evidence folder (default docs/sandbox-evidence)
  *
@@ -113,8 +114,8 @@ async function main() {
   }
   const record = arg("record");
   if (record) {
-    const [invoice_id, payment_id, amount] = record.split(":");
-    const input = { invoice_id, method: "PAYPAL", payment_id, amount: { currency_code: merchantProfile().currency, value: Number(amount).toFixed(2) }, note: "Recorded by Chaser (sandbox reconciliation check)" };
+    const [invoice_id, payment_id, amount, method = "PAYPAL"] = record.split(":");
+    const input = { invoice_id, method, ...(payment_id ? { payment_id } : {}), amount: { currency_code: merchantProfile().currency, value: Number(amount).toFixed(2) }, note: "Recorded by Chaser (sandbox reconciliation check)" };
     raw.record_payment_for_invoice = await call("record_payment_for_invoice", input, () => liveExecute("record_payment_for_invoice", input), (v) => v);
   }
   const evidence = arg("evidence");
