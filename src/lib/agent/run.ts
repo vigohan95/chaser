@@ -40,7 +40,10 @@ export function agentSetup(opts: { unattended?: boolean } = {}): AgentSetup {
           audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - needs you (skipped in unattended run)`, decision: "approval-required", reason: ev.reason, input: toolCall.input });
           return { type: "denied", reason: `Needs human approval (${ev.reason}). Skipped because this run is unattended; ask again from the command center.` };
         }
-        audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - waiting for your approval`, decision: "approval-required", reason: ev.reason, input: toolCall.input });
+        // The SDK re-runs toolApproval when the conversation continues after the user's answer; log the request once.
+        const key = JSON.stringify(toolCall.input);
+        const already = store.audit.slice(0, 30).some((a) => a.decision === "approval-required" && a.tool === toolCall.toolName && JSON.stringify(a.input) === key);
+        if (!already) audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - waiting for your approval`, decision: "approval-required", reason: ev.reason, input: toolCall.input });
         return { type: "user-approval", reason: ev.reason };
       }
       return { type: "approved", reason: ev.reason };

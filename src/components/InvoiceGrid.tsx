@@ -64,7 +64,8 @@ export default function InvoiceGrid({ invoices, policy, now, onSelection, onOver
         const sent = highestStageSent(i);
         const order = ["none", "friendly", "firm", "final"];
         const nextStage = !isOpenInvoice(i) ? "" : i.chase_override === "paused" ? "paused" : order.indexOf(due) > order.indexOf(sent) ? `${due} due` : due === "none" ? "" : `${sent} sent`;
-        return { ...i, overdue: od, nextStage, clientName: i.client.business ?? `${i.client.given_name} ${i.client.surname}`, work: i.items.map((x) => x.name).join(", ") };
+        // Non-open rows sort to the bottom of the (default) overdue sort.
+        return { ...i, overdue: isOpenInvoice(i) ? od : -100000, nextStage, clientName: i.client.business ?? `${i.client.given_name} ${i.client.surname}`, work: i.items.map((x) => x.name).join(", ") };
       }),
     [invoices, policy, now],
   );
