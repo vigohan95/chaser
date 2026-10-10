@@ -44,3 +44,6 @@ next-env.d.ts
 .data/
 *.mp4
 *.log
+
+# demo video outputs (scripts/make_video.py)
+/video/

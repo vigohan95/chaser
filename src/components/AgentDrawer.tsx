@@ -127,7 +127,7 @@ function ToolChip({ name, state, input, output, errorText }: { name: string; sta
       {denied && <span className="ml-2 text-muted">blocked by policy</span>}
       {outObj?.error ? <span className="ml-2 text-bad">{String(outObj.error)}</span> : null}
       {open && (
-        <pre className="mt-1 max-h-48 overflow-auto rounded bg-background p-2 font-mono text-[10px]">
+        <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-background p-2 font-mono text-[10px]">
           {`input: ${JSON.stringify(input, null, 1)}\n`}
           {output !== undefined ? `output: ${JSON.stringify(output, null, 1)}` : errorText ? `error: ${errorText}` : ""}
         </pre>

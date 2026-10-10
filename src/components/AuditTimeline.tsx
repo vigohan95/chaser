@@ -46,7 +46,7 @@ export default function AuditTimeline({ entries }: { entries: AuditEntry[] }) {
                 </button>
               )}
               {open === e.id && (
-                <pre className="mt-1 max-h-48 overflow-auto rounded bg-background p-2 font-mono text-[11px]">
+                <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-background p-2 font-mono text-[11px]">
                   {e.input !== undefined ? `input: ${typeof e.input === "string" ? e.input : JSON.stringify(e.input, null, 1)}\n` : ""}
                   {e.output !== undefined ? `output: ${typeof e.output === "string" ? e.output : JSON.stringify(e.output, null, 1)}` : ""}
                 </pre>
