@@ -98,7 +98,13 @@ export interface Dispute {
   buyer_email: string;
   buyer_name?: string;
   outcome?: "ACCEPTED_BY_SELLER" | "RESOLVED_BUYER_FAVOUR" | "RESOLVED_SELLER_FAVOUR";
+  /** INQUIRY (buyer asked a question; answer with send-message) or CHARGEBACK (claim; answer with provide-evidence). */
+  life_cycle_stage?: "INQUIRY" | "CHARGEBACK" | "PRE_ARBITRATION" | "ARBITRATION";
+  /** Local overlay: the evidence pack the agent drafted. */
   evidence_draft?: string;
+  /** Local overlay: when and through which Disputes API endpoint the pack was submitted. */
+  evidence_submitted_at?: string;
+  evidence_channel?: "provide-evidence" | "send-message";
 }
 
 export interface Tracking {
@@ -148,6 +154,8 @@ export interface AuditEntry {
   action: string; // human-readable one-liner
   decision?: "allowed" | "approval-required" | "approved" | "denied" | "info" | "error";
   reason?: string;
+  /** Policy field the decision cites (e.g. "approvals.refundsOver"); see policy/engine.ts. */
+  rule?: string;
   input?: unknown;
   output?: unknown;
 }

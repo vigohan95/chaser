@@ -7,6 +7,7 @@
 import { ALL_TOOLS_ENABLED, PayPalAgentToolkit } from "@paypal/agent-toolkit/ai-sdk";
 import type { z } from "zod";
 import { paypalEnv } from "../env";
+import { submitDisputeEvidence, type EvidenceSubmission } from "./rest";
 import type { Dispute, Invoice, InvoiceStatus, Transaction } from "./types";
 import { round2 } from "./types";
 
@@ -41,6 +42,16 @@ export class PayPalApiError extends Error {
 
 /** Run a toolkit tool against the PayPal sandbox and return parsed JSON (the toolkit returns JSON strings). */
 export async function liveExecute(tool: string, input: unknown): Promise<unknown> {
+  if (tool === "submit_dispute_evidence") {
+    // Not in the toolkit: Disputes API provide-evidence / send-message over plain REST.
+    const i = (input ?? {}) as { dispute_id: string; stage?: string } & EvidenceSubmission;
+    let stage = i.stage;
+    if (!stage) {
+      const d = (await liveExecute("get_dispute", { dispute_id: i.dispute_id })) as { dispute_life_cycle_stage?: string };
+      stage = d.dispute_life_cycle_stage;
+    }
+    return submitDisputeEvidence(i.dispute_id, { evidence_type: i.evidence_type, notes: i.notes, tracking: i.tracking }, stage);
+  }
   const raw = getRawTools()[tool];
   if (!raw) throw new PayPalApiError(`Unknown PayPal tool "${tool}"`);
   const text = await raw.execute(input, { toolCallId: "", messages: [] });
@@ -144,5 +155,6 @@ export function mapDispute(pp: unknown): Dispute {
     buyer_email: s(buyer.email),
     buyer_name: s(buyer.name) || undefined,
     outcome: (s(j(o.dispute_outcome).outcome_code) || undefined) as Dispute["outcome"],
+    life_cycle_stage: (s(o.dispute_life_cycle_stage) || undefined) as Dispute["life_cycle_stage"],
   };
 }

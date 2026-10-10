@@ -52,7 +52,15 @@ export default function PolicyPanel({ policy, onSave }: { policy: Policy; onSave
       </div>
       <div className="space-y-1.5">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted">Money boundaries</div>
-        <Num label="Auto-accept disputes under" prefix="$" value={draft.disputes.autoAcceptUnder} onChange={(v) => setDraft({ ...draft, disputes: { autoAcceptUnder: v } })} />
+        <Num label="Auto-accept disputes under" prefix="$" value={draft.disputes.autoAcceptUnder} onChange={(v) => setDraft({ ...draft, disputes: { ...draft.disputes, autoAcceptUnder: v } })} />
+        <label className="flex items-center justify-between gap-2 text-sm">
+          <span className="text-muted">Dispute evidence packs</span>
+          <select value={draft.disputes.submitEvidence} onChange={(e) => setDraft({ ...draft, disputes: { ...draft.disputes, submitEvidence: e.target.value as Policy["disputes"]["submitEvidence"] } })} className="rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent">
+            <option value="ask">show me, then submit</option>
+            <option value="auto">submit without asking</option>
+            <option value="never">never submit (I will)</option>
+          </select>
+        </label>
         <Num label="Ask me for refunds over" prefix="$" value={draft.approvals.refundsOver} onChange={(v) => setDraft({ ...draft, approvals: { ...draft.approvals, refundsOver: v } })} />
         <Num label="Ask me for invoices over" prefix="$" value={draft.approvals.invoicesOver} onChange={(v) => setDraft({ ...draft, approvals: { ...draft.approvals, invoicesOver: v } })} />
         <label className="flex items-center justify-between gap-2 text-sm">

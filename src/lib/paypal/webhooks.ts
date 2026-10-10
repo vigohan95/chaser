@@ -2,61 +2,21 @@
  * PayPal Webhooks: verification (sandbox) and event application (both modes).
  * Events drive the agent reactively: a paid invoice is reconciled instantly, a new dispute is triaged.
  */
-import { paypalEnv } from "../env";
 import { audit, bump, getStore } from "../store";
 import { currentMode } from "./backend";
 import { findInvoice, recordPayment } from "./mock";
+import { getAccessToken, verifyWebhookSignatureRest } from "./rest";
 import { money } from "./types";
 import { txnId } from "./fixtures";
+
+export { getAccessToken };
 
 type J = Record<string, unknown>;
 const j = (v: unknown): J => (v && typeof v === "object" ? (v as J) : {});
 const s = (v: unknown, d = ""): string => (typeof v === "string" ? v : typeof v === "number" ? String(v) : d);
 
-let tokenCache: { token: string; exp: number } | undefined;
-
-export async function getAccessToken(): Promise<string> {
-  const { clientId, clientSecret, sandbox } = paypalEnv();
-  if (tokenCache && tokenCache.exp > Date.now() + 60_000) return tokenCache.token;
-  const base = sandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
-  const res = await fetch(`${base}/v1/oauth2/token`, {
-    method: "POST",
-    headers: { Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: "grant_type=client_credentials",
-  });
-  if (!res.ok) throw new Error(`PayPal OAuth failed: ${res.status}`);
-  const data = (await res.json()) as { access_token: string; expires_in: number };
-  tokenCache = { token: data.access_token, exp: Date.now() + data.expires_in * 1000 };
-  return data.access_token;
-}
-
 /** POST /v1/notifications/verify-webhook-signature (the toolkit has no webhook tool, so this is plain REST). */
-export async function verifyWebhookSignature(headers: Headers, rawBody: string): Promise<{ ok: boolean; reason?: string }> {
-  const { webhookId, sandbox } = paypalEnv();
-  if (!webhookId) return { ok: false, reason: "PAYPAL_WEBHOOK_ID is not set" };
-  const h = (k: string) => headers.get(k) ?? "";
-  try {
-    const token = await getAccessToken();
-    const base = sandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
-    const res = await fetch(`${base}/v1/notifications/verify-webhook-signature`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        auth_algo: h("paypal-auth-algo"),
-        cert_url: h("paypal-cert-url"),
-        transmission_id: h("paypal-transmission-id"),
-        transmission_sig: h("paypal-transmission-sig"),
-        transmission_time: h("paypal-transmission-time"),
-        webhook_id: webhookId,
-        webhook_event: JSON.parse(rawBody),
-      }),
-    });
-    const data = (await res.json()) as { verification_status?: string };
-    return data.verification_status === "SUCCESS" ? { ok: true } : { ok: false, reason: `verification_status=${data.verification_status ?? res.status}` };
-  } catch (e) {
-    return { ok: false, reason: e instanceof Error ? e.message : String(e) };
-  }
-}
+export const verifyWebhookSignature = verifyWebhookSignatureRest;
 
 export interface WebhookOutcome {
   event: string;

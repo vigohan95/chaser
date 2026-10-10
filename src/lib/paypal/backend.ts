@@ -15,7 +15,7 @@ export function currentMode(): Mode {
 }
 
 export function llmLabel(): string {
-  if (isMockLlm()) return "mock planner (no LLM key)";
+  if (isMockLlm()) return "rule planner (no LLM key)";
   if (process.env.LLM_MODEL) return process.env.LLM_MODEL;
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return "gemini-2.5-flash";
   if (process.env.GROQ_API_KEY) return "groq/openai/gpt-oss-120b";
@@ -55,7 +55,7 @@ async function sandboxLists() {
     version: store.version,
     invoices,
     transactions: pick(txn, "transaction_details").map(mapTransaction),
-    disputes: pick(dis, "items").map(mapDispute),
+    disputes: pick(dis, "items").map(mapDispute).map((d) => ({ ...d, ...store.disputeOverlay[d.id] })),
   };
   return sandboxCache;
 }

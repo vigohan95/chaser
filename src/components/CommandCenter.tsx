@@ -7,16 +7,27 @@ import { overdueDays } from "@/lib/agent/chase";
 import type { Invoice, StatePayload } from "@/lib/paypal/types";
 import { isOpenInvoice } from "@/lib/paypal/types";
 import { DEFAULT_POLICY, type Policy } from "@/lib/policy/schema";
+import type { ReconcileResult } from "@/lib/agent/reconcile";
 import AgentDrawer, { type ChatMessage } from "./AgentDrawer";
+import ApprovalLedger from "./ApprovalLedger";
 import AuditTimeline from "./AuditTimeline";
 import InvoiceGrid from "./InvoiceGrid";
+import MatchReview from "./MatchReview";
 import { DisputeGrid, SubscriptionsPanel, TransactionGrid } from "./OtherGrids";
 import PolicyPanel from "./PolicyPanel";
 import { usd } from "./grid";
 
 type Payload = StatePayload<Policy>;
 type View = Payload["view"];
-type Tab = "invoices" | "transactions" | "disputes" | "subscriptions" | "audit";
+type Tab = "invoices" | "payments" | "disputes" | "approvals" | "subscriptions" | "audit";
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "invoices", label: "Invoices" },
+  { id: "payments", label: "Payments" },
+  { id: "disputes", label: "Disputes" },
+  { id: "approvals", label: "Approvals" },
+  { id: "subscriptions", label: "Retainers" },
+  { id: "audit", label: "Audit" },
+];
 
 const STORAGE_KEY = "chaser-snapshot-v1";
 
@@ -93,6 +104,19 @@ export default function CommandCenter() {
     await call("/api/state");
     setRefreshing(false);
   }, [call]);
+
+  /** Match preview for the match-review grid (pure; records nothing). */
+  const fetchMatches = useCallback(async (): Promise<ReconcileResult | undefined> => {
+    try {
+      const res = await fetch("/api/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: latestSnapshot }) });
+      const data = (await res.json()) as ReconcileResult & { error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
+      return data;
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : String(e));
+      return undefined;
+    }
+  }, []);
 
   const chat = useChat<ChatMessage>({
     id: "chaser-command-center",
@@ -178,8 +202,8 @@ export default function CommandCenter() {
           </div>
         </div>
         {view && (
-          <span className={`chip ${view.mode === "sandbox" ? "border-accent text-accent" : "border-amber-400 text-warn"}`} title="All money is sandbox/play money">
-            {view.mode === "sandbox" ? "PayPal sandbox" : "Mock PayPal (no keys)"}
+          <span className={`chip ${view.mode === "sandbox" ? "border-accent text-accent" : "text-muted"}`} title={view.mode === "sandbox" ? "Acting on your PayPal sandbox account through the PayPal Agent Toolkit. Play money only." : "Demo data: sandbox-shaped PayPal responses served in-process, isolated per visitor. Add sandbox credentials and the same agent acts on PayPal."}>
+            {view.mode === "sandbox" ? "PayPal sandbox" : "Demo data"}
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -225,14 +249,14 @@ export default function CommandCenter() {
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <button className="btn btn-primary" onClick={() => ask("Run collections")} disabled={busy || !view}>
-              Run collections
-            </button>
-            <button className="btn" onClick={() => ask("Reconcile payments")} disabled={busy || !view}>
+            <button className="btn btn-primary" onClick={() => ask("Reconcile payments")} disabled={busy || !view} title="Match every unlinked PayPal payment to the right invoice (exact, partial, split) and record it">
               Reconcile payments
             </button>
-            <button className="btn" onClick={() => ask("Review disputes")} disabled={busy || !view}>
+            <button className="btn" onClick={() => ask("Review disputes")} disabled={busy || !view} title="Accept small disputes under your limit; build and submit evidence packs for the rest">
               Review disputes
+            </button>
+            <button className="btn" onClick={() => ask("Run collections")} disabled={busy || !view} title="Send policy-driven reminders written from each invoice">
+              Run collections
             </button>
             {selected.length > 0 && (
               <>
@@ -248,12 +272,14 @@ export default function CommandCenter() {
               </>
             )}
             <nav className="ml-auto flex gap-1 rounded-md border border-border bg-panel p-0.5 text-sm">
-              {(["invoices", "transactions", "disputes", "subscriptions", "audit"] as Tab[]).map((t) => (
-                <button key={t} onClick={() => setTab(t)} className={`rounded px-2.5 py-1 capitalize ${tab === t ? "bg-accent text-white" : "hover:text-accent"}`}>
-                  {t}
-                  {view && t === "invoices" ? ` (${openInvoices.length})` : ""}
-                  {view && t === "disputes" && kpis?.disputes ? ` (${kpis.disputes})` : ""}
-                  {view && t === "audit" ? ` (${view.audit.length})` : ""}
+              {TABS.map((t) => (
+                <button key={t.id} onClick={() => setTab(t.id)} className={`rounded px-2.5 py-1 ${tab === t.id ? "bg-accent text-white" : "hover:text-accent"}`}>
+                  {t.label}
+                  {view && t.id === "invoices" ? ` (${openInvoices.length})` : ""}
+                  {view && t.id === "payments" && kpis?.unmatched ? ` (${kpis.unmatched})` : ""}
+                  {view && t.id === "disputes" && kpis?.disputes ? ` (${kpis.disputes})` : ""}
+                  {view && t.id === "approvals" ? ` (${view.audit.filter((a) => a.actor === "policy" || a.decision === "approved" || a.decision === "denied").length})` : ""}
+                  {view && t.id === "audit" ? ` (${view.audit.length})` : ""}
                 </button>
               ))}
             </nav>
@@ -262,8 +288,18 @@ export default function CommandCenter() {
           <div className="min-h-0 flex-1">
             {!view && !loadError && <div className="text-sm text-muted">Loading...</div>}
             {view && tab === "invoices" && <InvoiceGrid invoices={view.invoices} policy={view.policy} now={now} onSelection={setSelected} onOverrideChanged={onOverrideChanged} />}
-            {view && tab === "transactions" && <TransactionGrid transactions={view.transactions} invoices={view.invoices} />}
-            {view && tab === "disputes" && <DisputeGrid disputes={view.disputes} invoices={view.invoices} />}
+            {view && tab === "payments" && (
+              <div className="flex h-full flex-col gap-3">
+                <div className="min-h-0 flex-[1.1]">
+                  <MatchReview transactions={view.transactions} invoices={view.invoices} fetchMatches={fetchMatches} onRecord={ask} busy={busy} />
+                </div>
+                <div className="min-h-0 flex-1">
+                  <TransactionGrid transactions={view.transactions} invoices={view.invoices} />
+                </div>
+              </div>
+            )}
+            {view && tab === "disputes" && <DisputeGrid disputes={view.disputes} invoices={view.invoices} onAsk={ask} busy={busy} />}
+            {view && tab === "approvals" && <ApprovalLedger entries={view.audit} policy={view.policy} />}
             {view && tab === "subscriptions" && <SubscriptionsPanel plans={view.plans} subscriptions={view.subscriptions} />}
             {view && tab === "audit" && (
               <div className="h-full overflow-y-auto pr-1">

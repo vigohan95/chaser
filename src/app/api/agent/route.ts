@@ -1,6 +1,8 @@
 import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 import { agentSetup } from "@/lib/agent/run";
 import { readBody, statePayload, withSnapshot } from "@/lib/api";
+import { isMockLlm } from "@/lib/env";
+import { clientIp, takeLlmRun } from "@/lib/llm/quota";
 
 export const maxDuration = 60;
 
@@ -12,8 +14,11 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const body = await readBody(req);
   const messages = (Array.isArray(body.messages) ? body.messages : []) as UIMessage[];
+  // Hosted LLM keys are protected by daily caps (per visitor and global); past the cap the keyless planner takes over.
+  const quota = isMockLlm() ? undefined : takeLlmRun(clientIp(req));
+  const capped = quota !== undefined && !quota.allowed;
   return withSnapshot(body, async () => {
-    const setup = agentSetup();
+    const setup = agentSetup({ forceMock: capped });
     const modelMessages = await convertToModelMessages(messages, { tools: setup.tools, ignoreIncompleteToolCalls: true });
     const stream = createUIMessageStream({
       originalMessages: messages,
@@ -34,7 +39,9 @@ export async function POST(req: Request) {
           if (done) break;
           writer.write(value);
         }
-        writer.write({ type: "data-snapshot", data: await statePayload(), transient: true });
+        const payload = await statePayload();
+        if (capped) payload.view.llm = `rule planner (${quota?.reason}; LLM back after ${quota?.resetsAt.slice(11, 16)} UTC)`;
+        writer.write({ type: "data-snapshot", data: payload, transient: true });
       },
     });
     return createUIMessageStreamResponse({ stream });

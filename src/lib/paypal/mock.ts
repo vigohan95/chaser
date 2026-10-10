@@ -102,7 +102,7 @@ function toPayPalDispute(d: Dispute) {
     reason: d.reason,
     status: d.status,
     dispute_amount: { currency_code: d.currency, value: d.amount.toFixed(2) },
-    dispute_life_cycle_stage: d.status === "OPEN_INQUIRIES" ? "INQUIRY" : "CHARGEBACK",
+    dispute_life_cycle_stage: d.life_cycle_stage ?? (d.status === "OPEN_INQUIRIES" ? "INQUIRY" : "CHARGEBACK"),
     seller_response_due_date: d.seller_response_due,
     disputed_transactions: [{ seller_transaction_id: d.transaction_id, invoice_number: d.invoice_id, buyer: { email: d.buyer_email, name: d.buyer_name } }],
     dispute_outcome: d.outcome ? { outcome_code: d.outcome } : undefined,
@@ -344,6 +344,19 @@ export async function mockExecute(tool: string, rawInput: unknown): Promise<unkn
       }
       bump();
       return { dispute_id: d.id, status: d.status, outcome: d.outcome, refunded: { currency_code: d.currency, value: d.amount.toFixed(2) } };
+    }
+
+    case "submit_dispute_evidence": {
+      // Not a toolkit tool: Chaser calls the Disputes API directly in sandbox mode (see rest.ts). The mock mirrors it.
+      const d = findDispute(str(input.dispute_id));
+      if (d.status === "RESOLVED") throw new MockPayPalError(`Dispute ${d.id} is already resolved`, "INVALID_STATE");
+      const stage = d.life_cycle_stage ?? (d.status === "OPEN_INQUIRIES" ? "INQUIRY" : "CHARGEBACK");
+      const channel = stage === "INQUIRY" ? "send-message" : "provide-evidence";
+      d.evidence_submitted_at = new Date().toISOString();
+      d.evidence_channel = channel;
+      d.status = stage === "INQUIRY" ? "REQUIRED_OTHER_PARTY_ACTION" : "UNDER_PAYPAL_REVIEW";
+      bump();
+      return { dispute_id: d.id, channel, status: 200, dispute_status: d.status, links: [{ href: `https://www.sandbox.paypal.com/resolutioncenter/view/${d.id}`, rel: "self", method: "GET" }] };
     }
 
     case "create_shipment_tracking": {

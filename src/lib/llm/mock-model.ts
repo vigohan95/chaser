@@ -105,6 +105,31 @@ export function parseInvoiceNumbers(text: string): string[] {
   return [...new Set((text.match(/INV-\d{4}/gi) ?? []).map((x) => x.toUpperCase()))];
 }
 
+export function parseDisputeIds(text: string): string[] {
+  return [...new Set(text.match(/PP-D-[A-Z0-9-]+/gi)?.map((x) => x.toUpperCase()) ?? [])];
+}
+
+export interface ExplicitAllocation {
+  transaction_id: string;
+  invoice_id: string;
+  invoice_number: string;
+  amount: number;
+}
+
+/**
+ * "Record these payment allocations: 7AB...XYZ -> INV-0015 [INV2-...] $900.00; ..." (what the match-review grid
+ * sends). The bracketed invoice id is optional; without it the invoice number is used as the id.
+ */
+export function parseAllocations(text: string): ExplicitAllocation[] {
+  const out: ExplicitAllocation[] = [];
+  const re = /\b([A-Z0-9]{12,32})\s*(?:->|=>|to)\s*(INV-\d{4})(?:\s*\[([^\]]+)\])?\s*\$?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+  for (const m of text.matchAll(re)) {
+    const number = m[2].toUpperCase();
+    out.push({ transaction_id: m[1].toUpperCase(), invoice_number: number, invoice_id: m[3]?.trim() || number, amount: Number(m[4].replace(/,/g, "")) });
+  }
+  return out;
+}
+
 function parseNet(text: string): number {
   const m = text.match(/net\s*(\d{1,3})/i) ?? text.match(/due in\s*(\d{1,3})\s*days/i);
   return m ? Number(m[1]) : 15;
@@ -132,8 +157,8 @@ export function detectIntent(text: string): Intent {
   if (/\brefund\b/.test(t)) return "refund";
   if (/\b(pause|stop chasing|resume|unpause|gentle|aggressive)\b/.test(t)) return "override";
   if (/\b(remind|reminder|chase|chasing|collect|collections|nudge|overdue|late payers?)\b/.test(t)) return "collections";
-  if (/\b(reconcile|reconciliation|match|unmatched|came in|payments? (?:received|arrived)|bank|transactions?)\b/.test(t)) return "reconcile";
-  if (/\b(dispute|disputes|chargeback|claim)\b/.test(t)) return "disputes";
+  if (/\b(reconcile|reconciliation|match|unmatched|came in|payments? (?:received|arrived)|bank|transactions?|allocations?)\b/.test(t)) return "reconcile";
+  if (/\b(dispute|disputes|chargeback|claim|evidence)\b/.test(t)) return "disputes";
   if (/\b(ship|shipped|shipping|track|tracking|delivered)\b/.test(t)) return "tracking";
   if (/\b(subscription|retainer|recurring|monthly|every month)\b/.test(t)) return "subscription";
   if (/\b(status|summary|how much|outstanding|owed|owe|overview|report|receivables)\b/.test(t)) return "status";
@@ -241,7 +266,25 @@ function collectionsPlaybook(turn: Turn): Action {
   };
 }
 
+function allocationsPlaybook(turn: Turn, allocations: ExplicitAllocation[]): Action {
+  const recorded = has(turn, "record_payment_for_invoice");
+  if (recorded.length === 0) {
+    return {
+      type: "calls",
+      calls: allocations.map((a) => ({ toolName: "record_payment_for_invoice", input: { invoice_id: a.invoice_id, method: "PAYPAL", payment_id: a.transaction_id, amount: { currency_code: "USD", value: a.amount.toFixed(2) }, note: `Allocation reviewed in the command center: ${usd(a.amount)} of payment ${a.transaction_id} applied to ${a.invoice_number}` } })),
+    };
+  }
+  const lines = allocations.map((a) => {
+    const r = recorded.find((x) => s(x.input.invoice_id) === a.invoice_id && s(x.input.payment_id) === a.transaction_id);
+    return `- ${usd(a.amount)} of ${a.transaction_id} -> ${a.invoice_number}: ${outcomeLine(r, (o) => `recorded, status ${s(o.status)}`)}`;
+  });
+  const ok = recorded.filter((r) => !r.denied && !r.error).length;
+  return { type: "text", text: `Recorded ${ok} of ${allocations.length} allocation(s) you reviewed:\n${lines.join("\n")}` };
+}
+
 function reconcilePlaybook(turn: Turn): Action {
+  const explicit = parseAllocations(turn.userText);
+  if (explicit.length) return allocationsPlaybook(turn, explicit);
   const matched = first(turn, "match_payments");
   if (!matched) return { type: "calls", calls: [{ toolName: "match_payments", input: {} }] };
   const matches = arr(matched.output.matches);
@@ -271,7 +314,21 @@ function reconcilePlaybook(turn: Turn): Action {
   return { type: "text", text: `Reconciliation: ${confident.length} payment(s) matched and recorded.\n${lines.join("\n")}${lowLines.length ? `\n\nNeeds your eyes:\n${lowLines.join("\n")}` : ""}${unLines.length ? `\n\nUnmatched:\n${unLines.join("\n")}` : ""}` };
 }
 
+function submitEvidencePlaybook(turn: Turn, id: string): Action {
+  const drafted = first(turn, "draft_dispute_evidence");
+  if (!drafted) return { type: "calls", calls: [{ toolName: "draft_dispute_evidence", input: { dispute_id: id } }] };
+  if (drafted.error) return { type: "text", text: `I could not build the evidence pack for ${id}: ${drafted.error}` };
+  const submitted = first(turn, "submit_dispute_evidence");
+  if (!submitted) return { type: "calls", calls: [{ toolName: "submit_dispute_evidence", input: { dispute_id: id, notes: s(drafted.output.draft).slice(0, 2000) } }] };
+  return {
+    type: "text",
+    text: `Evidence pack for ${id}${drafted.output.invoice_number ? ` (${s(drafted.output.invoice_number)})` : ""}: ${outcomeLine(submitted, (o) => `submitted to PayPal via the Disputes API ${s(o.channel)} endpoint (HTTP ${n(o.http_status)}), evidence type ${s(o.evidence_type)}${o.tracking ? ` with ${s(j(o.tracking).carrier_name)} tracking ${s(j(o.tracking).tracking_number)}` : ""}`)}.\n\nWhat I sent:\n${s(drafted.output.draft)}`,
+  };
+}
+
 function disputesPlaybook(turn: Turn): Action {
+  const ids = parseDisputeIds(turn.userText);
+  if (/\b(submit|send|file|respond)\b/i.test(turn.userText) && ids.length === 1) return submitEvidencePlaybook(turn, ids[0]);
   const listed = first(turn, "list_disputes");
   if (!listed) return { type: "calls", calls: [{ toolName: "list_disputes", input: {} }] };
   const open = arr(listed.output.items).filter((d) => s(d.status) !== "RESOLVED");
@@ -291,16 +348,25 @@ function disputesPlaybook(turn: Turn): Action {
       }),
     };
   }
+  // Drafted packs go to PayPal next, unless the policy reserves submission for the user ("never").
+  const drafts = acted.filter((x) => x.toolName === "draft_dispute_evidence" && !x.error && !s(x.output.next_step).startsWith("Already submitted"));
+  const submits = has(turn, "submit_dispute_evidence");
+  if (drafts.length && submits.length === 0 && s(j(turn.policy.disputes).submitEvidence, "ask") !== "never") {
+    return { type: "calls", calls: drafts.map((x) => ({ toolName: "submit_dispute_evidence", input: { dispute_id: s(x.input.dispute_id), notes: s(x.output.draft).slice(0, 2000) } })) };
+  }
   const lines = open.map((d) => {
     const id = s(d.dispute_id);
     const amount = n(j(d.dispute_amount).value);
     const r = acted.find((x) => s(x.input.dispute_id) === id);
+    const sub = submits.find((x) => s(x.input.dispute_id) === id);
     const buyer = s(j(arr(d.disputed_transactions)[0]?.buyer).email);
     if (r?.toolName === "accept_dispute_claim") return `- ${id} ${usd(amount)} from ${buyer} (${s(d.reason)}): ${outcomeLine(r, (o) => `accepted, ${usd(n(j(o.refunded).value, amount))} refunded`)}`;
-    return `- ${id} ${usd(amount)} from ${buyer} (${s(d.reason)}): ${outcomeLine(r, () => `over the ${usd(limit)} auto-accept limit, so I drafted an evidence pack for you to review and submit${d.seller_response_due_date ? ` before ${s(d.seller_response_due_date).slice(0, 10)}` : ""}`)}`;
+    const drafted = outcomeLine(r, () => `over the ${usd(limit)} auto-accept limit, so I built an evidence pack${d.seller_response_due_date ? ` (respond by ${s(d.seller_response_due_date).slice(0, 10)})` : ""}`);
+    const sent = sub ? `; ${outcomeLine(sub, (o) => `submitted to PayPal via ${s(o.channel)} (HTTP ${n(o.http_status)})`)}` : r && !r.error ? "; submission left to you (policy: disputes.submitEvidence = never)" : "";
+    return `- ${id} ${usd(amount)} from ${buyer} (${s(d.reason)}): ${drafted}${sent}`;
   });
   const draft = acted.find((x) => x.toolName === "draft_dispute_evidence" && !x.error);
-  return { type: "text", text: `Disputes reviewed (${open.length} open):\n${lines.join("\n")}${draft ? `\n\nEvidence draft:\n${s(draft.output.draft)}` : ""}` };
+  return { type: "text", text: `Disputes reviewed (${open.length} open):\n${lines.join("\n")}${draft ? `\n\nEvidence pack:\n${s(draft.output.draft)}` : ""}` };
 }
 
 function trackingPlaybook(turn: Turn): Action {
@@ -408,7 +474,8 @@ const HELP = `I am Chaser, your receivables agent on PayPal. Try:
 - "I finished the logo package for Acme Corp, $1,200, net 15" - creates and sends an invoice
 - "Run collections" - chases overdue invoices under your policy
 - "Reconcile payments" - matches unlinked PayPal payments to invoices
-- "Review disputes" - accepts small ones, drafts evidence for big ones
+- "Review disputes" - accepts small ones, builds and submits evidence packs for big ones (your policy decides if it asks first)
+- "Record these payment allocations: <transaction> -> INV-0015 $900.00" - records what you reviewed in the match grid
 - "Shipped the brand book for Northwind, UPS 1Z999AA10123456784" - adds tracking
 - "Set up a $1,500 monthly retainer for Northwind Traders" - creates a subscription
 - "Refund $120 on INV-0007" / "Pause chasing INV-0003" / "What's outstanding?"`;

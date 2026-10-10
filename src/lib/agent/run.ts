@@ -20,11 +20,11 @@ export interface AgentSetup {
   toolApproval: (options: { toolCall: { toolName: string; input: unknown } }) => Promise<ToolApprovalStatus>;
 }
 
-export function agentSetup(opts: { unattended?: boolean } = {}): AgentSetup {
+export function agentSetup(opts: { unattended?: boolean; forceMock?: boolean } = {}): AgentSetup {
   const store = getStore();
   const tools = buildTools();
   return {
-    model: getModel(),
+    model: getModel({ forceMock: opts.forceMock }),
     tools,
     system: systemPrompt(store.policy, currentMode()),
     stopWhen: stepCountIs(MAX_STEPS),
@@ -32,18 +32,18 @@ export function agentSetup(opts: { unattended?: boolean } = {}): AgentSetup {
       const [invoices, disputes] = await Promise.all([getInvoices(), getDisputes()]);
       const ev = evaluateAction(toolCall.toolName, toolCall.input, { policy: store.policy, invoices, disputes });
       if (ev.decision === "deny") {
-        audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - blocked`, decision: "denied", reason: ev.reason, input: toolCall.input });
+        audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - blocked`, decision: "denied", reason: ev.reason, rule: ev.rule, input: toolCall.input });
         return { type: "denied", reason: ev.reason };
       }
       if (ev.decision === "approve") {
         if (opts.unattended) {
-          audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - needs you (skipped in unattended run)`, decision: "approval-required", reason: ev.reason, input: toolCall.input });
+          audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - needs you (skipped in unattended run)`, decision: "approval-required", reason: ev.reason, rule: ev.rule, input: toolCall.input });
           return { type: "denied", reason: `Needs human approval (${ev.reason}). Skipped because this run is unattended; ask again from the command center.` };
         }
         // The SDK re-runs toolApproval when the conversation continues after the user's answer; log the request once.
         const key = JSON.stringify(toolCall.input);
         const already = store.audit.slice(0, 30).some((a) => a.decision === "approval-required" && a.tool === toolCall.toolName && JSON.stringify(a.input) === key);
-        if (!already) audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - waiting for your approval`, decision: "approval-required", reason: ev.reason, input: toolCall.input });
+        if (!already) audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - waiting for your approval`, decision: "approval-required", reason: ev.reason, rule: ev.rule, input: toolCall.input });
         return { type: "user-approval", reason: ev.reason };
       }
       return { type: "approved", reason: ev.reason };

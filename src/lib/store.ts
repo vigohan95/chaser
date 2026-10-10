@@ -19,6 +19,13 @@ export interface Overlay {
   chase_override: ChaseOverride;
 }
 
+/** What Chaser remembers about a dispute that PayPal does not store: the drafted pack and when it was submitted. */
+export interface DisputeOverlay {
+  evidence_draft?: string;
+  evidence_submitted_at?: string;
+  evidence_channel?: "provide-evidence" | "send-message";
+}
+
 export interface MockData {
   invoices: Invoice[];
   transactions: Transaction[];
@@ -34,6 +41,7 @@ export interface Store {
   policy: Policy;
   audit: AuditEntry[];
   overlay: Record<string, Overlay>;
+  disputeOverlay: Record<string, DisputeOverlay>;
   mock: MockData;
   seededAt: string;
   /** Bumped on every mutation; lets clients skip no-op re-renders. */
@@ -74,6 +82,7 @@ export function createStore(now = new Date(), policy?: Policy): Store {
       },
     ],
     overlay: {},
+    disputeOverlay: {},
     mock: freshMockData(now),
     seededAt: now.toISOString(),
     version: 1,
@@ -119,6 +128,7 @@ export function hydrateSnapshot(raw: unknown): Store {
     policy,
     audit: (s.audit as AuditEntry[]).slice(0, 500),
     overlay: s.overlay && typeof s.overlay === "object" ? (s.overlay as Record<string, Overlay>) : {},
+    disputeOverlay: s.disputeOverlay && typeof s.disputeOverlay === "object" ? (s.disputeOverlay as Record<string, DisputeOverlay>) : {},
     mock: {
       invoices: m.invoices as Invoice[],
       transactions: m.transactions as Transaction[],
@@ -160,6 +170,12 @@ export function overlayFor(invoiceId: string): Overlay {
   const s = getStore();
   if (!s.overlay[invoiceId]) s.overlay[invoiceId] = { reminders: [], chase_override: "default" };
   return s.overlay[invoiceId];
+}
+
+export function disputeOverlayFor(disputeId: string): DisputeOverlay {
+  const s = getStore();
+  if (!s.disputeOverlay[disputeId]) s.disputeOverlay[disputeId] = {};
+  return s.disputeOverlay[disputeId];
 }
 
 export function setPolicy(p: Policy): void {

@@ -12,8 +12,8 @@ import type { LanguageModel } from "ai";
 import { isMockLlm } from "../env";
 import { MockPlannerModel } from "./mock-model";
 
-export function getModel(): LanguageModel {
-  if (isMockLlm()) return new MockPlannerModel();
+export function getModel(opts: { forceMock?: boolean } = {}): LanguageModel {
+  if (opts.forceMock || isMockLlm()) return new MockPlannerModel();
   const override = process.env.LLM_MODEL;
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });

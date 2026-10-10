@@ -9,9 +9,9 @@ export type ChatMessage = UIMessage<unknown, { snapshot: unknown }>;
 type Helpers = Pick<UseChatHelpers<ChatMessage>, "messages" | "sendMessage" | "status" | "error" | "addToolApprovalResponse" | "stop" | "setMessages">;
 
 const SUGGESTIONS = [
-  "Run collections",
   "Reconcile payments",
   "Review disputes",
+  "Run collections",
   "What's outstanding?",
   "I finished the logo package for Acme Corp, $1,200, net 15",
   "Set up a $1,500 monthly retainer for Northwind Traders",
@@ -35,7 +35,8 @@ const HUMAN: Record<string, string> = {
   match_payments: "Match payments",
   lookup_customer: "Look up client",
   list_disputes: "List disputes",
-  draft_dispute_evidence: "Draft evidence",
+  draft_dispute_evidence: "Build evidence pack",
+  submit_dispute_evidence: "Submit evidence",
   summarize_receivables: "Summarize receivables",
   set_chase_override: "Set chasing",
   list_invoices: "List invoices",
@@ -81,6 +82,8 @@ function describeInput(tool: string, input: unknown): { title: string; lines: st
     }
     case "cancel_sent_invoice":
       return { title: `Cancel invoice ${String(i.invoice_id ?? "")}`, lines: [String(i.note ?? "")] };
+    case "submit_dispute_evidence":
+      return { title: `Submit evidence pack for ${String(i.dispute_id ?? "")}`, lines: [i.notes ? String(i.notes) : "The pack built from the invoice, payment record, shipment tracking and reminder history (see the Disputes tab).", "", "Sent through the PayPal Disputes API (provide-evidence, or send-message while it is an inquiry)."] };
     default:
       return { title: human(tool), lines: [JSON.stringify(input).slice(0, 300)] };
   }

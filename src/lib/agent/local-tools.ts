@@ -5,12 +5,23 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { merchantProfile } from "../env";
-import { currentMode, getDisputes, getInvoices, getTransactions } from "../paypal/backend";
+import { currentMode, execute, getDisputes, getInvoices, getTransactions } from "../paypal/backend";
+import { evaluateAction } from "../policy/engine";
 import { findInvoice as findMockInvoice, setChaseOverride } from "../paypal/mock";
 import { isOpenInvoice, money, round2 } from "../paypal/types";
-import { audit, bump, getStore, overlayFor } from "../store";
+import { audit, bump, disputeOverlayFor, getStore, overlayFor } from "../store";
 import { overdueDays, planCollections } from "./chase";
+import { buildEvidencePack } from "./evidence";
 import { matchTransactions } from "./reconcile";
+
+async function evidenceFor(dispute_id: string) {
+  const disputes = await getDisputes();
+  const d = disputes.find((x) => x.id === dispute_id);
+  if (!d) return { error: `Dispute ${dispute_id} not found` as const };
+  const [invoices, transactions] = await Promise.all([getInvoices(), getTransactions()]);
+  const pack = buildEvidencePack(d, { invoices, transactions, trackings: getStore().mock.trackings, merchant: merchantProfile() });
+  return { d, pack };
+}
 
 export const localTools = {
   get_policy: tool({
@@ -121,36 +132,48 @@ export const localTools = {
   }),
 
   draft_dispute_evidence: tool({
-    description: "Assemble an evidence pack for a dispute (invoice details, delivery/tracking, reminder history, timeline) as a draft the user can submit in the PayPal Resolution Center. Use for disputes above the auto-accept limit.",
+    description: "Assemble an evidence pack for a dispute from what Chaser knows (invoice line items, payment record, shipment tracking, reminder history) and draft the seller statement. Read-only. Use for disputes above the auto-accept limit; then call submit_dispute_evidence to send it through the PayPal Disputes API (the user's policy decides whether that needs approval).",
     inputSchema: z.object({ dispute_id: z.string() }),
     execute: async ({ dispute_id }) => {
-      const disputes = await getDisputes();
-      const d = disputes.find((x) => x.id === dispute_id);
-      if (!d) return { error: `Dispute ${dispute_id} not found` };
-      const invoices = await getInvoices();
-      const inv = invoices.find((i) => i.id === d.invoice_id) ?? invoices.find((i) => i.client.email === d.buyer_email && !isOpenInvoice(i));
-      const tracking = getStore().mock.trackings.find((t) => t.transaction_id === d.transaction_id);
-      const m = merchantProfile();
-      const lines = [
-        `Dispute ${d.id} - ${money(d.amount, d.currency)} - reason: ${d.reason}`,
-        `Buyer: ${d.buyer_name ?? ""} <${d.buyer_email}>`,
-        `Transaction: ${d.transaction_id}`,
-        inv ? `Invoice ${inv.invoice_number} issued ${inv.invoice_date}, due ${inv.due_date}, status ${inv.status}, total ${money(inv.total, inv.currency)}` : "Invoice: not linked",
-        inv ? `Work delivered: ${inv.items.map((i) => `${i.quantity} x ${i.name}${i.description ? ` (${i.description})` : ""}`).join("; ")}` : "",
-        tracking ? `Shipment: ${tracking.carrier} ${tracking.tracking_number} - ${tracking.status} (${tracking.shipped_at.slice(0, 10)})` : "Shipment: digital/service delivery, no physical shipment",
-        inv && inv.reminders.length ? `Reminder history: ${inv.reminders.map((r) => `${r.stage} on ${r.at.slice(0, 10)}`).join(", ")}` : "",
-        "",
-        `Statement: ${m.businessName} delivered the services described on the invoice, which the buyer accepted and paid. The buyer did not raise concerns before opening this dispute. Attached: invoice PDF, delivery confirmation, written approvals, and correspondence.`,
-        "",
-        "Suggested attachments: invoice PDF, final deliverable files or links, client emails approving the work, contract/SOW.",
-      ].filter(Boolean);
-      const draft = lines.join("\n");
-      if (currentMode() === "mock") {
-        d.evidence_draft = draft;
-        bump();
-      }
-      audit({ actor: "agent", tool: "draft_dispute_evidence", action: `Drafted evidence pack for dispute ${d.id} (${money(d.amount, d.currency)})`, decision: "info" });
-      return { dispute_id: d.id, respond_by: d.seller_response_due, draft, next_step: "Review and submit in PayPal Resolution Center (the Disputes API supports provide-evidence; Chaser keeps that step human)." };
+      const r = await evidenceFor(dispute_id);
+      if ("error" in r) return { error: r.error };
+      const { d, pack } = r;
+      if (currentMode() === "mock") d.evidence_draft = pack.draft;
+      disputeOverlayFor(d.id).evidence_draft = pack.draft;
+      bump();
+      audit({ actor: "agent", tool: "draft_dispute_evidence", action: `Drafted evidence pack for dispute ${d.id} (${money(d.amount, d.currency)})${pack.invoice_number ? ` from ${pack.invoice_number}` : ""}`, decision: "info" });
+      return {
+        dispute_id: d.id,
+        invoice_number: pack.invoice_number,
+        respond_by: d.seller_response_due,
+        stage: d.life_cycle_stage,
+        evidence_type: pack.evidence_type,
+        tracking: pack.tracking,
+        draft: pack.draft,
+        attachments_suggested: pack.attachments_suggested,
+        next_step: d.evidence_submitted_at ? `Already submitted ${d.evidence_submitted_at.slice(0, 10)} via ${d.evidence_channel}.` : "Call submit_dispute_evidence with this dispute_id to send the pack to PayPal (Disputes API provide-evidence, or send-message while the dispute is an inquiry).",
+      };
+    },
+  }),
+
+  submit_dispute_evidence: tool({
+    description: "Send the drafted evidence pack for a dispute to PayPal through the Disputes API: provide-evidence for a claim (CHARGEBACK stage), send-message while it is still an inquiry. Builds the pack from Chaser's records; pass `notes` to replace the seller statement. The user's policy (disputes.submitEvidence) decides whether this needs approval.",
+    inputSchema: z.object({ dispute_id: z.string(), notes: z.string().max(2000).optional().describe("Override the generated statement (max 2000 characters)") }),
+    execute: async ({ dispute_id, notes }) => {
+      const r = await evidenceFor(dispute_id);
+      if ("error" in r) return { error: r.error };
+      const { d, pack } = r;
+      if (d.evidence_submitted_at) return { error: `Evidence for ${d.id} was already submitted ${d.evidence_submitted_at.slice(0, 10)} via ${d.evidence_channel}.` };
+      const submission = { evidence_type: pack.evidence_type, notes: (notes?.trim() || pack.notes).slice(0, 2000), tracking: pack.tracking };
+      const result = (await execute("submit_dispute_evidence", { dispute_id: d.id, stage: d.life_cycle_stage, ...submission })) as { channel: "provide-evidence" | "send-message"; status: number; links?: unknown };
+      const overlay = disputeOverlayFor(d.id);
+      overlay.evidence_draft = pack.draft;
+      overlay.evidence_submitted_at = new Date().toISOString();
+      overlay.evidence_channel = result.channel;
+      bump();
+      const ev = evaluateAction("submit_dispute_evidence", { dispute_id: d.id }, { policy: getStore().policy, invoices: await getInvoices(), disputes: await getDisputes() });
+      audit({ actor: "agent", tool: "submit_dispute_evidence", action: `Submitted evidence pack for dispute ${d.id} (${money(d.amount, d.currency)}) via Disputes API ${result.channel}`, decision: ev.decision === "approve" ? "approved" : "allowed", reason: `${ev.decision === "approve" ? "You approved this. " : ""}${ev.reason} HTTP ${result.status}.`, rule: ev.rule, input: submission, output: result });
+      return { dispute_id: d.id, channel: result.channel, http_status: result.status, evidence_type: submission.evidence_type, tracking: submission.tracking, submitted_at: overlay.evidence_submitted_at, links: result.links };
     },
   }),
 

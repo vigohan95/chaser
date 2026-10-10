@@ -65,6 +65,7 @@ async function logExecution(name: string, input: unknown, output: unknown, error
     action: error ? `${ev.summary} - failed` : ev.summary,
     decision: error ? "error" : ev.decision === "approve" ? "approved" : "allowed",
     reason: error ?? (ev.decision === "approve" ? `You approved this. ${ev.reason}` : ev.reason),
+    rule: ev.rule,
     input: summarize(input),
     output: summarize(output),
   });

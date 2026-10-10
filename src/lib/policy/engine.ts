@@ -9,6 +9,8 @@ export interface Evaluation {
   reason: string;
   /** Short human label for the audit timeline / approval card. */
   summary: string;
+  /** The policy field (JSON path into the policy) the decision came from, so the approval ledger can cite it. */
+  rule: string;
 }
 
 export interface EvaluationContext {
@@ -76,13 +78,13 @@ export function evaluateAction(tool: string, rawInput: unknown, ctx: EvaluationC
   const now = ctx.now ?? new Date();
 
   if (policy.approvals.neverAllow.includes(tool)) {
-    return { decision: "deny", reason: `Policy: "${tool}" is on the never-allow list.`, summary: tool };
+    return { decision: "deny", reason: `Policy: "${tool}" is on the never-allow list.`, summary: tool, rule: "approvals.neverAllow" };
   }
   if (isReadOnlyTool(tool)) {
-    return { decision: "allow", reason: "Read-only tool.", summary: tool };
+    return { decision: "allow", reason: "Read-only tool.", summary: tool, rule: "read-only" };
   }
   if (policy.approvals.alwaysAsk.includes(tool)) {
-    return { decision: "approve", reason: `Policy: "${tool}" always needs your approval.`, summary: tool };
+    return { decision: "approve", reason: `Policy: "${tool}" always needs your approval.`, summary: tool, rule: "approvals.alwaysAsk" };
   }
 
   switch (tool) {
@@ -90,62 +92,62 @@ export function evaluateAction(tool: string, rawInput: unknown, ctx: EvaluationC
       const total = invoiceTotal(input);
       const summary = `Create invoice for ${fmt(total, ccy)}`;
       if (total >= policy.approvals.invoicesOver) {
-        return { decision: "approve", reason: `Invoice total ${fmt(total, ccy)} is at or above your ${fmt(policy.approvals.invoicesOver, ccy)} approval threshold.`, summary };
+        return { decision: "approve", reason: `Invoice total ${fmt(total, ccy)} is at or above your ${fmt(policy.approvals.invoicesOver, ccy)} approval threshold.`, summary, rule: "approvals.invoicesOver" };
       }
-      return { decision: "allow", reason: `Invoice total ${fmt(total, ccy)} is under the ${fmt(policy.approvals.invoicesOver, ccy)} threshold.`, summary };
+      return { decision: "allow", reason: `Invoice total ${fmt(total, ccy)} is under the ${fmt(policy.approvals.invoicesOver, ccy)} threshold.`, summary, rule: "approvals.invoicesOver" };
     }
 
     case "send_invoice": {
       const inv = findInvoice(ctx, input.invoice_id);
       const summary = `Send invoice ${inv?.invoice_number ?? String(input.invoice_id ?? "")}`;
       if (inv && inv.total >= policy.approvals.invoicesOver) {
-        return { decision: "approve", reason: `Invoice total ${fmt(inv.total, ccy)} is at or above your ${fmt(policy.approvals.invoicesOver, ccy)} approval threshold.`, summary };
+        return { decision: "approve", reason: `Invoice total ${fmt(inv.total, ccy)} is at or above your ${fmt(policy.approvals.invoicesOver, ccy)} approval threshold.`, summary, rule: "approvals.invoicesOver" };
       }
-      return { decision: "allow", reason: "Sending an invoice moves no money.", summary };
+      return { decision: "allow", reason: "Sending an invoice moves no money.", summary, rule: "approvals.invoicesOver" };
     }
 
     case "send_invoice_reminder": {
       const inv = findInvoice(ctx, input.invoice_id);
       const summary = `Remind ${inv?.client.business ?? inv?.client.email ?? "client"} about ${inv?.invoice_number ?? String(input.invoice_id ?? "")}`;
-      if (!inv) return { decision: "allow", reason: "Reminder for an invoice not in the local view; allowed (no money moves).", summary };
+      if (!inv) return { decision: "allow", reason: "Reminder for an invoice not in the local view; allowed (no money moves).", summary, rule: "reminders" };
       if (inv.chase_override === "paused") {
-        return { decision: "deny", reason: `Chasing is paused for ${inv.invoice_number}.`, summary };
+        return { decision: "deny", reason: `Chasing is paused for ${inv.invoice_number}.`, summary, rule: "invoice.chase_override" };
       }
       if (inv.reminders.length >= policy.reminders.maxReminders) {
-        return { decision: "deny", reason: `${inv.invoice_number} already received ${inv.reminders.length} reminders (max ${policy.reminders.maxReminders}).`, summary };
+        return { decision: "deny", reason: `${inv.invoice_number} already received ${inv.reminders.length} reminders (max ${policy.reminders.maxReminders}).`, summary, rule: "reminders.maxReminders" };
       }
       const last = inv.reminders.at(-1);
       if (last) {
         const days = (now.getTime() - new Date(last.at).getTime()) / 86_400_000;
         if (days < policy.reminders.minDaysBetweenReminders) {
-          return { decision: "deny", reason: `Last reminder for ${inv.invoice_number} was ${days.toFixed(1)} days ago (min gap ${policy.reminders.minDaysBetweenReminders} days).`, summary };
+          return { decision: "deny", reason: `Last reminder for ${inv.invoice_number} was ${days.toFixed(1)} days ago (min gap ${policy.reminders.minDaysBetweenReminders} days).`, summary, rule: "reminders.minDaysBetweenReminders" };
         }
       }
-      return { decision: "allow", reason: `Within reminder cadence (${inv.reminders.length}/${policy.reminders.maxReminders} sent).`, summary };
+      return { decision: "allow", reason: `Within reminder cadence (${inv.reminders.length}/${policy.reminders.maxReminders} sent).`, summary, rule: "reminders.maxReminders" };
     }
 
     case "record_payment_for_invoice": {
       const inv = findInvoice(ctx, input.invoice_id);
       const amt = amountOf(input);
       const summary = `Record ${amt !== undefined ? fmt(amt, ccy) : "payment"} on ${inv?.invoice_number ?? String(input.invoice_id ?? "")}`;
-      if (!inv) return { decision: "approve", reason: "Cannot verify the invoice locally; please confirm.", summary };
+      if (!inv) return { decision: "approve", reason: "Cannot verify the invoice locally; please confirm.", summary, rule: "reconciliation" };
       if (amt === undefined) {
         return policy.reconciliation.autoRecordExactMatches
-          ? { decision: "allow", reason: "Recording full payment of the invoice balance.", summary }
-          : { decision: "approve", reason: "Auto-recording is off in your policy.", summary };
+          ? { decision: "allow", reason: "Recording full payment of the invoice balance.", summary, rule: "reconciliation.autoRecordExactMatches" }
+          : { decision: "approve", reason: "Auto-recording is off in your policy.", summary, rule: "reconciliation.autoRecordExactMatches" };
       }
       const tol = policy.reconciliation.amountTolerance;
       if (amt > inv.due + tol) {
-        return { decision: "approve", reason: `${fmt(amt, ccy)} exceeds the ${fmt(inv.due, ccy)} still due on ${inv.invoice_number}.`, summary };
+        return { decision: "approve", reason: `${fmt(amt, ccy)} exceeds the ${fmt(inv.due, ccy)} still due on ${inv.invoice_number}.`, summary, rule: "reconciliation.amountTolerance" };
       }
       if (Math.abs(amt - inv.due) <= tol) {
         return policy.reconciliation.autoRecordExactMatches
-          ? { decision: "allow", reason: "Exact match of the outstanding balance.", summary }
-          : { decision: "approve", reason: "Auto-recording exact matches is off in your policy.", summary };
+          ? { decision: "allow", reason: "Exact match of the outstanding balance.", summary, rule: "reconciliation.autoRecordExactMatches" }
+          : { decision: "approve", reason: "Auto-recording exact matches is off in your policy.", summary, rule: "reconciliation.autoRecordExactMatches" };
       }
       return policy.reconciliation.autoRecordPartials
-        ? { decision: "allow", reason: `Partial payment (${fmt(amt, ccy)} of ${fmt(inv.due, ccy)} due).`, summary }
-        : { decision: "approve", reason: "Auto-recording partial payments is off in your policy.", summary };
+        ? { decision: "allow", reason: `Partial payment (${fmt(amt, ccy)} of ${fmt(inv.due, ccy)} due).`, summary, rule: "reconciliation.autoRecordPartials" }
+        : { decision: "approve", reason: "Auto-recording partial payments is off in your policy.", summary, rule: "reconciliation.autoRecordPartials" };
     }
 
     case "record_refund_for_invoice":
@@ -154,27 +156,36 @@ export function evaluateAction(tool: string, rawInput: unknown, ctx: EvaluationC
       const inv = findInvoice(ctx, input.invoice_id);
       const summary = `Refund ${amt !== undefined ? fmt(amt, ccy) : "full amount"}${inv ? ` on ${inv.invoice_number}` : ""}`;
       if (amt === undefined) {
-        return { decision: "approve", reason: "Full refunds always need your approval.", summary };
+        return { decision: "approve", reason: "Full refunds always need your approval.", summary, rule: "approvals.refundsOver" };
       }
       if (amt >= policy.approvals.refundsOver) {
-        return { decision: "approve", reason: `Refund ${fmt(amt, ccy)} is at or above your ${fmt(policy.approvals.refundsOver, ccy)} approval threshold.`, summary };
+        return { decision: "approve", reason: `Refund ${fmt(amt, ccy)} is at or above your ${fmt(policy.approvals.refundsOver, ccy)} approval threshold.`, summary, rule: "approvals.refundsOver" };
       }
-      return { decision: "allow", reason: `Refund ${fmt(amt, ccy)} is under the ${fmt(policy.approvals.refundsOver, ccy)} threshold.`, summary };
+      return { decision: "allow", reason: `Refund ${fmt(amt, ccy)} is under the ${fmt(policy.approvals.refundsOver, ccy)} threshold.`, summary, rule: "approvals.refundsOver" };
     }
 
     case "accept_dispute_claim": {
       const d = findDispute(ctx, input.dispute_id);
       const summary = `Accept dispute ${String(input.dispute_id ?? "")}${d ? ` (${fmt(d.amount, d.currency)})` : ""}`;
-      if (!d) return { decision: "approve", reason: "Dispute not in the local view; please confirm.", summary };
+      if (!d) return { decision: "approve", reason: "Dispute not in the local view; please confirm.", summary, rule: "disputes.autoAcceptUnder" };
       if (d.amount < policy.disputes.autoAcceptUnder) {
-        return { decision: "allow", reason: `${fmt(d.amount, d.currency)} is under your ${fmt(policy.disputes.autoAcceptUnder, ccy)} auto-accept limit.`, summary };
+        return { decision: "allow", reason: `${fmt(d.amount, d.currency)} is under your ${fmt(policy.disputes.autoAcceptUnder, ccy)} auto-accept limit.`, summary, rule: "disputes.autoAcceptUnder" };
       }
-      return { decision: "approve", reason: `${fmt(d.amount, d.currency)} is at or above your ${fmt(policy.disputes.autoAcceptUnder, ccy)} auto-accept limit.`, summary };
+      return { decision: "approve", reason: `${fmt(d.amount, d.currency)} is at or above your ${fmt(policy.disputes.autoAcceptUnder, ccy)} auto-accept limit.`, summary, rule: "disputes.autoAcceptUnder" };
+    }
+
+    case "submit_dispute_evidence": {
+      const d = findDispute(ctx, input.dispute_id);
+      const summary = `Submit evidence pack for dispute ${String(input.dispute_id ?? "")}${d ? ` (${fmt(d.amount, d.currency)})` : ""}`;
+      const mode = policy.disputes.submitEvidence;
+      if (mode === "never") return { decision: "deny", reason: "Policy: evidence submission is reserved for you (disputes.submitEvidence = never).", summary, rule: "disputes.submitEvidence" };
+      if (mode === "auto") return { decision: "allow", reason: "Policy: evidence packs go to PayPal without asking (disputes.submitEvidence = auto).", summary, rule: "disputes.submitEvidence" };
+      return { decision: "approve", reason: "Evidence sent to PayPal is a statement made on your behalf; review the pack before it goes (disputes.submitEvidence = ask).", summary, rule: "disputes.submitEvidence" };
     }
 
     case "create_shipment_tracking":
     case "update_shipment_tracking":
-      return { decision: "allow", reason: "Adding tracking moves no money and protects you in disputes.", summary: `Add tracking ${String(input.tracking_number ?? "")}` };
+      return { decision: "allow", reason: "Adding tracking moves no money and protects you in disputes.", summary: `Add tracking ${String(input.tracking_number ?? "")}`, rule: "default-allow" };
 
     case "create_product":
     case "create_subscription_plan":
@@ -182,13 +193,13 @@ export function evaluateAction(tool: string, rawInput: unknown, ctx: EvaluationC
     case "setup_invoice_auto_reminders":
     case "update_invoicing":
     case "create_conditional_rules_for_invoice":
-      return { decision: "allow", reason: "Sets up billing; the client still has to approve any charge.", summary: tool.replaceAll("_", " ") };
+      return { decision: "allow", reason: "Sets up billing; the client still has to approve any charge.", summary: tool.replaceAll("_", " "), rule: "default-allow" };
 
     case "set_chase_override": {
-      return { decision: "allow", reason: "Local setting only.", summary: `Set chasing to ${String(input.override ?? "")}` };
+      return { decision: "allow", reason: "Local setting only.", summary: `Set chasing to ${String(input.override ?? "")}`, rule: "default-allow" };
     }
 
     default:
-      return { decision: "approve", reason: `No policy rule for "${tool}"; defaulting to ask.`, summary: tool };
+      return { decision: "approve", reason: `No policy rule for "${tool}"; defaulting to ask.`, summary: tool, rule: "default-ask" };
   }
 }

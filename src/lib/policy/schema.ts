@@ -15,6 +15,8 @@ export const PolicySchema = z.object({
   disputes: z.object({
     /** Disputes strictly under this amount are accepted automatically. */
     autoAcceptUnder: z.number().min(0).default(20),
+    /** Evidence packs: "ask" shows the pack as an approval card, "auto" submits without asking, "never" blocks the agent from submitting. */
+    submitEvidence: z.enum(["ask", "auto", "never"]).default("ask"),
   }),
   approvals: z.object({
     /** Refunds at or above this amount need a human. */

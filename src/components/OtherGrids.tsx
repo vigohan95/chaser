@@ -37,7 +37,7 @@ export function TransactionGrid({ transactions, invoices }: { transactions: Tran
 
 type DisputeRow = Dispute & { invoice_number: string };
 
-export function DisputeGrid({ disputes, invoices }: { disputes: Dispute[]; invoices: Invoice[] }) {
+export function DisputeGrid({ disputes, invoices, onAsk, busy }: { disputes: Dispute[]; invoices: Invoice[]; onAsk?: (text: string) => void; busy?: boolean }) {
   const theme = useGridTheme();
   const [selected, setSelected] = useState<DisputeRow | undefined>();
   const rows = useMemo<DisputeRow[]>(() => disputes.map((d) => ({ ...d, invoice_number: invoices.find((i) => i.id === d.invoice_id)?.invoice_number ?? "" })), [disputes, invoices]);
@@ -51,7 +51,13 @@ export function DisputeGrid({ disputes, invoices }: { disputes: Dispute[]; invoi
       { field: "status", headerName: "Status", width: 170, cellRenderer: (p: ICellRendererParams<DisputeRow, string>) => <span className={`chip ${p.value === "RESOLVED" ? "text-ok" : "text-warn"}`}>{String(p.value ?? "").replaceAll("_", " ")}</span> },
       { field: "seller_response_due", headerName: "Respond by", width: 110, valueFormatter: (p) => shortDate(p.value) },
       { field: "invoice_number", headerName: "Invoice", width: 100 },
-      { headerName: "Evidence", width: 100, valueGetter: (p) => (p.data?.evidence_draft ? "drafted" : ""), cellRenderer: (p: ICellRendererParams<DisputeRow, string>) => (p.value ? <span className="chip text-accent">draft ready</span> : null) },
+      { field: "life_cycle_stage", headerName: "Stage", width: 110, valueFormatter: (p) => String(p.value ?? "").toLowerCase() },
+      {
+        headerName: "Evidence",
+        width: 130,
+        valueGetter: (p) => (p.data?.evidence_submitted_at ? "submitted" : p.data?.evidence_draft ? "drafted" : ""),
+        cellRenderer: (p: ICellRendererParams<DisputeRow, string>) => (p.value === "submitted" ? <span className="chip text-ok">submitted</span> : p.value === "drafted" ? <span className="chip text-accent">pack ready</span> : null),
+      },
     ],
     [],
   );
@@ -60,10 +66,20 @@ export function DisputeGrid({ disputes, invoices }: { disputes: Dispute[]; invoi
       <div className="min-h-0 flex-1">
         <AgGridReact<DisputeRow> theme={theme} rowData={rows} columnDefs={cols} defaultColDef={{ sortable: true, filter: true, resizable: true }} getRowId={(p) => p.data.id} rowSelection={{ mode: "singleRow", checkboxes: false, enableClickSelection: true }} onSelectionChanged={(e) => setSelected(e.api.getSelectedRows()[0])} />
       </div>
-      {selected?.evidence_draft && (
-        <div className="max-h-56 overflow-auto rounded-md border border-border bg-panel p-3 text-xs">
-          <div className="mb-1 font-semibold">Evidence pack draft for {selected.id} (review, then submit in PayPal Resolution Center)</div>
-          <pre className="whitespace-pre-wrap font-mono">{selected.evidence_draft}</pre>
+      {selected && selected.status !== "RESOLVED" && (
+        <div className="max-h-64 overflow-auto rounded-md border border-border bg-panel p-3 text-xs">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <span className="font-semibold">
+              Evidence pack for {selected.id} ({usd(selected.amount, selected.currency)})
+              {selected.evidence_submitted_at ? ` - submitted ${shortDate(selected.evidence_submitted_at)} via Disputes API ${selected.evidence_channel}` : selected.evidence_draft ? " - built, not yet sent" : " - not built yet"}
+            </span>
+            {onAsk && !selected.evidence_submitted_at && (
+              <button className="btn btn-primary ml-auto" disabled={busy} onClick={() => onAsk(`${selected.evidence_draft ? "Submit" : "Build and submit"} the evidence pack for dispute ${selected.id}`)} title="The agent assembles the pack from the invoice, payment, tracking and reminder history and sends it through the PayPal Disputes API; your policy decides whether it asks first">
+                {selected.evidence_draft ? "Submit evidence pack" : "Build and submit evidence pack"}
+              </button>
+            )}
+          </div>
+          {selected.evidence_draft ? <pre className="whitespace-pre-wrap font-mono">{selected.evidence_draft}</pre> : <p className="text-muted">Invoice line items, payment record, shipment tracking and reminder history go in automatically; the agent drafts the seller statement.</p>}
         </div>
       )}
     </div>
