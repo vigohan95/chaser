@@ -112,6 +112,7 @@ Optional sandbox insert (adds credibility for "Best Use of PayPal + AI"; 15 s, r
 
 ## E. Pre-submission checklist
 
+- [ ] Commits are authored as `Han Vigo <284575144+vigohan95@users.noreply.github.com>` (repo-local git config is set). Vercel blocks push-triggered deploys whose author is not attributed to the GitHub account; `hanwg666@gmail.com` is not linked to vigohan95, so commits with it show as unattributed and were blocked ("Deployment was blocked"). Alternative: add that email to https://github.com/settings/emails and verify it.
 - [ ] `npm test`, `npm run build`, `npm run lint` all green on the commit you submit (CI-free: run locally)
 - [ ] Repo public; LICENSE visible in GitHub About; README has setup steps and the PayPal capability list
 - [ ] No secrets in git (`git grep -i "client_secret\|api_key" -- ':!*.example' ':!*.md'` is empty)
