@@ -1,5 +1,7 @@
 # Chaser
 
+> Demo video (2:31): https://www.youtube.com/watch?v=nqY9uDsbKiM — Live demo: https://chaser-six.vercel.app
+
 **Chaser matches every PayPal payment to the right invoice and handles what comes after.**
 
 Money arrives on PayPal and the work starts: a $1,400 transfer that covers two invoices, a $300 "part payment, rest next week", a $480 dispute from a client who already approved the work. Chaser is an accounts-receivable agent that does that work on PayPal, inside a policy you write as data:
