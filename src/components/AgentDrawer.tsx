@@ -4,7 +4,9 @@ import type { UseChatHelpers } from "@ai-sdk/react";
 import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 
-type Helpers = Pick<UseChatHelpers<UIMessage>, "messages" | "sendMessage" | "status" | "error" | "addToolApprovalResponse" | "stop" | "setMessages">;
+/** Chat messages carry a transient `data-snapshot` part with the updated command-center state. */
+export type ChatMessage = UIMessage<unknown, { snapshot: unknown }>;
+type Helpers = Pick<UseChatHelpers<ChatMessage>, "messages" | "sendMessage" | "status" | "error" | "addToolApprovalResponse" | "stop" | "setMessages">;
 
 const SUGGESTIONS = [
   "Run collections",

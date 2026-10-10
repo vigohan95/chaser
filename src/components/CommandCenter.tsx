@@ -2,20 +2,43 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses } from "ai";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { overdueDays } from "@/lib/agent/chase";
-import type { CommandCenterState, Invoice } from "@/lib/paypal/types";
+import type { Invoice, StatePayload } from "@/lib/paypal/types";
 import { isOpenInvoice } from "@/lib/paypal/types";
 import { DEFAULT_POLICY, type Policy } from "@/lib/policy/schema";
-import AgentDrawer from "./AgentDrawer";
+import AgentDrawer, { type ChatMessage } from "./AgentDrawer";
 import AuditTimeline from "./AuditTimeline";
 import InvoiceGrid from "./InvoiceGrid";
 import { DisputeGrid, SubscriptionsPanel, TransactionGrid } from "./OtherGrids";
 import PolicyPanel from "./PolicyPanel";
 import { usd } from "./grid";
 
-type State = CommandCenterState & { policy: Policy; version: number };
+type Payload = StatePayload<Policy>;
+type View = Payload["view"];
 type Tab = "invoices" | "transactions" | "disputes" | "subscriptions" | "audit";
+
+const STORAGE_KEY = "chaser-snapshot-v1";
+
+/** Latest snapshot for this browser tab. Module scope (not a ref) so request bodies can read it lazily. */
+let latestSnapshot: unknown;
+
+function loadSavedSnapshot(): unknown {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function saveSnapshot(snapshot: unknown) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    /* quota or private mode: the in-memory copy still works for this page */
+  }
+}
 
 function Kpi({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
@@ -26,94 +49,123 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone?: stri
   );
 }
 
+/**
+ * The command center owns the demo state: the server is stateless between requests (serverless-safe), so the
+ * browser keeps the snapshot it last received and sends it with every call. Each visitor gets an isolated demo.
+ */
 export default function CommandCenter() {
-  const [state, setState] = useState<State | null>(null);
+  const [view, setView] = useState<View | null>(null);
   const [loadError, setLoadError] = useState("");
   const [tab, setTab] = useState<Tab>("invoices");
   const [selected, setSelected] = useState<Invoice[]>([]);
   const [showPolicy, setShowPolicy] = useState(false);
   const [pending, setPending] = useState<string | undefined>();
   const [simInvoice, setSimInvoice] = useState("");
-  const versionRef = useRef(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch("/api/state", { cache: "no-store" });
-      const data = (await res.json()) as State & { error?: string };
-      if (data.error) throw new Error(data.error);
-      if (data.version !== versionRef.current) {
-        versionRef.current = data.version;
-        setState(data);
-      }
-      setLoadError("");
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : String(e));
-    }
+  const apply = useCallback((payload: Payload) => {
+    latestSnapshot = payload.snapshot;
+    saveSnapshot(payload.snapshot);
+    setView(payload.view);
+    setLoadError("");
   }, []);
 
-  const chat = useChat({
+  /** POST a state-bearing request with the current snapshot and apply the returned payload. */
+  const call = useCallback(
+    async (url: string, body: Record<string, unknown> = {}, method = "POST") => {
+      try {
+        const init: RequestInit = method === "GET" ? { method } : { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, snapshot: latestSnapshot }) };
+        const res = await fetch(url, init);
+        const data = (await res.json()) as Payload & { error?: string };
+        if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
+        apply(data);
+        return data;
+      } catch (e) {
+        setLoadError(e instanceof Error ? e.message : String(e));
+        return undefined;
+      }
+    },
+    [apply],
+  );
+
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    await call("/api/state");
+    setRefreshing(false);
+  }, [call]);
+
+  const chat = useChat<ChatMessage>({
     id: "chaser-command-center",
-    transport: new DefaultChatTransport({ api: "/api/agent" }),
+    transport: new DefaultChatTransport({ api: "/api/agent", body: () => ({ snapshot: latestSnapshot }) }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-    onFinish: () => refresh(),
+    onData: (part) => {
+      if (part.type === "data-snapshot") apply(part.data as Payload);
+    },
     onError: () => refresh(),
   });
   const busy = chat.status === "streaming" || chat.status === "submitted";
 
-  // Initial load, then poll: fast while the agent is acting (tool results land in the grid live),
-  // slow otherwise (webhooks / cron). Re-arms whenever `busy` flips, which also refreshes right after a run.
+  // First load: continue a saved demo from this tab, else fetch fresh demo data.
   useEffect(() => {
-    const first = setTimeout(refresh, 0);
-    const id = setInterval(refresh, busy ? 1200 : 6000);
-    return () => {
-      clearTimeout(first);
-      clearInterval(id);
-    };
-  }, [busy, refresh]);
+    const saved = loadSavedSnapshot();
+    const id = setTimeout(() => {
+      latestSnapshot = saved;
+      void call("/api/state", {}, saved ? "POST" : "GET");
+    }, 0);
+    return () => clearTimeout(id);
+  }, [call]);
 
-  const now = useMemo(() => new Date(state?.now ?? 0), [state?.now]);
+  // Sandbox mode: PayPal is the source of truth, so poll it (webhooks land there too). Mock mode needs no polling.
+  useEffect(() => {
+    if (view?.mode !== "sandbox" || busy) return;
+    const id = setInterval(() => void call("/api/state"), 10_000);
+    return () => clearInterval(id);
+  }, [view?.mode, busy, call]);
+
+  const now = useMemo(() => new Date(view?.now ?? 0), [view?.now]);
   const kpis = useMemo(() => {
-    if (!state) return null;
-    const open = state.invoices.filter(isOpenInvoice);
+    if (!view) return null;
+    const open = view.invoices.filter(isOpenInvoice);
     const overdue = open.filter((i) => overdueDays(i, now) > 0);
     const since = now.getTime() - 30 * 86_400_000;
     return {
       outstanding: open.reduce((a, i) => a + i.due, 0),
       overdue: overdue.reduce((a, i) => a + i.due, 0),
       overdueCount: overdue.length,
-      collected: state.transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && new Date(t.date).getTime() >= since).reduce((a, t) => a + t.amount, 0),
-      disputes: state.disputes.filter((d) => d.status !== "RESOLVED").length,
-      unmatched: state.transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && !t.invoice_id).length,
+      collected: view.transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && new Date(t.date).getTime() >= since).reduce((a, t) => a + t.amount, 0),
+      disputes: view.disputes.filter((d) => d.status !== "RESOLVED").length,
+      unmatched: view.transactions.filter((t) => t.type === "PAYMENT" && t.status === "S" && !t.invoice_id).length,
     };
-  }, [state, now]);
+  }, [view, now]);
 
   const ask = (text: string) => {
     if (busy) return;
     chat.sendMessage({ text });
   };
 
-  const onOverrideChanged = useCallback(
-    async (id: string, override: Invoice["chase_override"]) => {
-      await fetch(`/api/invoices/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chase_override: override }) });
-      refresh();
+  const onOverrideChanged = useCallback((id: string, override: Invoice["chase_override"]) => void call(`/api/invoices/${encodeURIComponent(id)}`, { chase_override: override }, "PATCH"), [call]);
+
+  const savePolicy = useCallback(
+    async (policy: Policy) => {
+      const data = await call("/api/policy", { policy }, "PUT");
+      return data ? undefined : "Could not save the policy.";
     },
-    [refresh],
+    [call],
   );
 
   const resetDemo = async () => {
-    await fetch("/api/seed", { method: "POST" });
     chat.setMessages([]);
-    refresh();
+    await call("/api/seed");
   };
 
   const simulatePayment = async () => {
-    const id = simInvoice || state?.invoices.find((i) => isOpenInvoice(i) && overdueDays(i, now) > 0)?.id;
+    const id = simInvoice || view?.invoices.find((i) => isOpenInvoice(i) && overdueDays(i, now) > 0)?.id;
     if (!id) return;
-    await fetch("/api/simulate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "INVOICING.INVOICE.PAID", invoice_id: id }) });
-    refresh();
+    await call("/api/simulate", { event: "INVOICING.INVOICE.PAID", invoice_id: id });
+    setSimInvoice("");
   };
 
-  const openInvoices = state?.invoices.filter(isOpenInvoice) ?? [];
+  const openInvoices = view?.invoices.filter(isOpenInvoice) ?? [];
 
   return (
     <div className="flex h-screen flex-col">
@@ -125,13 +177,13 @@ export default function CommandCenter() {
             <div className="text-[11px] text-muted">AI receivables agent on PayPal</div>
           </div>
         </div>
-        {state && (
-          <span className={`chip ${state.mode === "sandbox" ? "border-accent text-accent" : "border-amber-400 text-warn"}`} title="All money is sandbox/play money">
-            {state.mode === "sandbox" ? "PayPal sandbox" : "Mock PayPal (no keys)"}
+        {view && (
+          <span className={`chip ${view.mode === "sandbox" ? "border-accent text-accent" : "border-amber-400 text-warn"}`} title="All money is sandbox/play money">
+            {view.mode === "sandbox" ? "PayPal sandbox" : "Mock PayPal (no keys)"}
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {state?.mode === "mock" && (
+          {view?.mode === "mock" && (
             <>
               <select value={simInvoice} onChange={(e) => setSimInvoice(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1.5 text-xs">
                 <option value="">Simulate: client pays (oldest overdue)</option>
@@ -141,21 +193,24 @@ export default function CommandCenter() {
                   </option>
                 ))}
               </select>
-              <button className="btn" onClick={simulatePayment} title="Fires an INVOICING.INVOICE.PAID webhook through the real handler">
+              <button className="btn" onClick={simulatePayment} disabled={busy} title="Fires an INVOICING.INVOICE.PAID webhook through the real handler">
                 Fire webhook
               </button>
-              <button className="btn" onClick={resetDemo}>
+              <button className="btn" onClick={resetDemo} disabled={busy}>
                 Reset demo
               </button>
             </>
           )}
+          <button className="btn" onClick={refresh} disabled={busy || refreshing} title={view?.mode === "sandbox" ? "Re-list invoices, transactions and disputes from PayPal" : "Re-derive the view"}>
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
           <button className={`btn ${showPolicy ? "border-accent text-accent" : ""}`} onClick={() => setShowPolicy(!showPolicy)}>
             Policy
           </button>
         </div>
       </header>
 
-      {loadError && <div className="border-b border-red-300 bg-red-50 px-4 py-1 text-xs text-bad dark:bg-red-950/30">Could not load state: {loadError}</div>}
+      {loadError && <div className="border-b border-red-300 bg-red-50 px-4 py-1 text-xs text-bad dark:bg-red-950/30">Something went wrong: {loadError}</div>}
 
       <div className="flex min-h-0 flex-1">
         <main className="flex min-w-0 flex-1 flex-col gap-3 p-4">
@@ -170,13 +225,13 @@ export default function CommandCenter() {
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <button className="btn btn-primary" onClick={() => ask("Run collections")} disabled={busy}>
+            <button className="btn btn-primary" onClick={() => ask("Run collections")} disabled={busy || !view}>
               Run collections
             </button>
-            <button className="btn" onClick={() => ask("Reconcile payments")} disabled={busy}>
+            <button className="btn" onClick={() => ask("Reconcile payments")} disabled={busy || !view}>
               Reconcile payments
             </button>
-            <button className="btn" onClick={() => ask("Review disputes")} disabled={busy}>
+            <button className="btn" onClick={() => ask("Review disputes")} disabled={busy || !view}>
               Review disputes
             </button>
             {selected.length > 0 && (
@@ -196,23 +251,23 @@ export default function CommandCenter() {
               {(["invoices", "transactions", "disputes", "subscriptions", "audit"] as Tab[]).map((t) => (
                 <button key={t} onClick={() => setTab(t)} className={`rounded px-2.5 py-1 capitalize ${tab === t ? "bg-accent text-white" : "hover:text-accent"}`}>
                   {t}
-                  {state && t === "invoices" ? ` (${openInvoices.length})` : ""}
-                  {state && t === "disputes" && kpis?.disputes ? ` (${kpis.disputes})` : ""}
-                  {state && t === "audit" ? ` (${state.audit.length})` : ""}
+                  {view && t === "invoices" ? ` (${openInvoices.length})` : ""}
+                  {view && t === "disputes" && kpis?.disputes ? ` (${kpis.disputes})` : ""}
+                  {view && t === "audit" ? ` (${view.audit.length})` : ""}
                 </button>
               ))}
             </nav>
           </div>
 
           <div className="min-h-0 flex-1">
-            {!state && !loadError && <div className="text-sm text-muted">Loading...</div>}
-            {state && tab === "invoices" && <InvoiceGrid invoices={state.invoices} policy={state.policy} now={now} onSelection={setSelected} onOverrideChanged={onOverrideChanged} />}
-            {state && tab === "transactions" && <TransactionGrid transactions={state.transactions} invoices={state.invoices} />}
-            {state && tab === "disputes" && <DisputeGrid disputes={state.disputes} invoices={state.invoices} />}
-            {state && tab === "subscriptions" && <SubscriptionsPanel plans={state.plans} subscriptions={state.subscriptions} />}
-            {state && tab === "audit" && (
+            {!view && !loadError && <div className="text-sm text-muted">Loading...</div>}
+            {view && tab === "invoices" && <InvoiceGrid invoices={view.invoices} policy={view.policy} now={now} onSelection={setSelected} onOverrideChanged={onOverrideChanged} />}
+            {view && tab === "transactions" && <TransactionGrid transactions={view.transactions} invoices={view.invoices} />}
+            {view && tab === "disputes" && <DisputeGrid disputes={view.disputes} invoices={view.invoices} />}
+            {view && tab === "subscriptions" && <SubscriptionsPanel plans={view.plans} subscriptions={view.subscriptions} />}
+            {view && tab === "audit" && (
               <div className="h-full overflow-y-auto pr-1">
-                <AuditTimeline entries={state.audit} />
+                <AuditTimeline entries={view.audit} />
               </div>
             )}
           </div>
@@ -221,11 +276,11 @@ export default function CommandCenter() {
         <aside className="flex w-[420px] shrink-0 flex-col border-l border-border bg-background">
           {showPolicy && (
             <div className="max-h-[55%] overflow-y-auto p-3">
-              <PolicyPanel policy={state?.policy ?? DEFAULT_POLICY} onSaved={() => refresh()} />
+              <PolicyPanel policy={view?.policy ?? DEFAULT_POLICY} onSave={savePolicy} />
             </div>
           )}
           <div className="min-h-0 flex-1">
-            <AgentDrawer chat={chat} llm={state?.llm ?? "..."} pending={pending} />
+            <AgentDrawer chat={chat} llm={view?.llm ?? "..."} pending={pending} />
           </div>
         </aside>
       </div>

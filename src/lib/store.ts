@@ -1,12 +1,18 @@
 /**
- * Process-local state. Mock mode keeps the whole "PayPal" here; sandbox mode keeps only what PayPal
- * does not store for us (policy, reminder history, chase overrides, audit log).
+ * State model.
  *
- * Kept on globalThis so Next.js dev HMR and route modules share one instance.
+ * Mock mode keeps the whole "PayPal" in a Store; sandbox mode keeps only what PayPal does not store for us
+ * (policy, reminder history, chase overrides, audit log).
+ *
+ * Serverless-safe: the browser carries a snapshot of its Store and sends it with every request; the route
+ * hydrates it into an AsyncLocalStorage context for the duration of that request and returns the new snapshot.
+ * No database, no cross-instance drift, and every visitor gets an isolated demo. Server-to-server callers
+ * (PayPal webhooks, Vercel Cron) fall back to a process-global Store.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { AuditEntry, ChaseOverride, Dispute, Invoice, Product, ReminderRecord, Subscription, SubscriptionPlan, Tracking, Transaction } from "./paypal/types";
 import { buildDisputes, buildInvoices, buildPlans, buildProducts, buildSubscriptions, buildTrackings, buildTransactions } from "./paypal/fixtures";
-import { DEFAULT_POLICY, type Policy } from "./policy/schema";
+import { DEFAULT_POLICY, parsePolicy, type Policy } from "./policy/schema";
 
 export interface Overlay {
   reminders: ReminderRecord[];
@@ -30,13 +36,15 @@ export interface Store {
   overlay: Record<string, Overlay>;
   mock: MockData;
   seededAt: string;
-  /** Tool calls that the agent ran since the last UI poll; lets the grid refresh only when needed. */
+  /** Bumped on every mutation; lets clients skip no-op re-renders. */
   version: number;
 }
 
 declare global {
   var __chaserStore: Store | undefined;
 }
+
+const als = new AsyncLocalStorage<Store>();
 
 export function freshMockData(now = new Date()): MockData {
   const invoices = buildInvoices(now);
@@ -53,9 +61,9 @@ export function freshMockData(now = new Date()): MockData {
   };
 }
 
-export function createStore(now = new Date()): Store {
+export function createStore(now = new Date(), policy?: Policy): Store {
   return {
-    policy: structuredClone(DEFAULT_POLICY),
+    policy: policy ? structuredClone(policy) : structuredClone(DEFAULT_POLICY),
     audit: [
       {
         id: "a0",
@@ -72,15 +80,64 @@ export function createStore(now = new Date()): Store {
   };
 }
 
+/** The Store for the current request (hydrated snapshot), else the process-global one. */
 export function getStore(): Store {
+  const scoped = als.getStore();
+  if (scoped) return scoped;
   if (!globalThis.__chaserStore) globalThis.__chaserStore = createStore();
   return globalThis.__chaserStore;
 }
 
+/** Run `fn` with `store` as the request-scoped Store (propagates through awaits, streams and tool calls). */
+export function runWithStore<T>(store: Store, fn: () => T): T {
+  return als.run(store, fn);
+}
+
+const MAX_SNAPSHOT_BYTES = 4_000_000;
+
+/**
+ * Turn a client-supplied snapshot into a Store. The snapshot is the client's own demo data, so it is trusted
+ * only for that request; shape is checked loosely and the policy is re-validated.
+ */
+export function hydrateSnapshot(raw: unknown): Store {
+  if (!raw || typeof raw !== "object") return createStore();
+  const s = raw as Partial<Store>;
+  const m = s.mock as Partial<MockData> | undefined;
+  if (!m || !Array.isArray(m.invoices) || !Array.isArray(m.transactions) || !Array.isArray(s.audit)) return createStore();
+  try {
+    if (JSON.stringify(raw).length > MAX_SNAPSHOT_BYTES) return createStore();
+  } catch {
+    return createStore();
+  }
+  let policy: Policy;
+  try {
+    policy = parsePolicy(s.policy);
+  } catch {
+    policy = structuredClone(DEFAULT_POLICY);
+  }
+  return {
+    policy,
+    audit: (s.audit as AuditEntry[]).slice(0, 500),
+    overlay: s.overlay && typeof s.overlay === "object" ? (s.overlay as Record<string, Overlay>) : {},
+    mock: {
+      invoices: m.invoices as Invoice[],
+      transactions: m.transactions as Transaction[],
+      disputes: Array.isArray(m.disputes) ? (m.disputes as Dispute[]) : [],
+      trackings: Array.isArray(m.trackings) ? (m.trackings as Tracking[]) : [],
+      products: Array.isArray(m.products) ? (m.products as Product[]) : buildProducts(),
+      plans: Array.isArray(m.plans) ? (m.plans as SubscriptionPlan[]) : buildPlans(),
+      subscriptions: Array.isArray(m.subscriptions) ? (m.subscriptions as Subscription[]) : [],
+      seq: typeof m.seq === "number" && m.seq >= 21 ? m.seq : 21 + (m.invoices as Invoice[]).length,
+    },
+    seededAt: typeof s.seededAt === "string" ? s.seededAt : new Date().toISOString(),
+    version: typeof s.version === "number" ? s.version : 1,
+  };
+}
+
+/** Replace the process-global Store (tests, server-to-server resets). Keeps the user's policy. */
 export function resetStore(now = new Date()): Store {
   const prev = globalThis.__chaserStore;
-  const next = createStore(now);
-  if (prev) next.policy = prev.policy; // keep the user's policy across demo resets
+  const next = createStore(now, prev?.policy);
   globalThis.__chaserStore = next;
   return next;
 }

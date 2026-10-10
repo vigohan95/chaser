@@ -70,6 +70,8 @@ flowchart LR
   ST --> G
 ```
 
+**Where state lives.** The server is stateless between requests: the browser keeps the demo snapshot it last received (policy, invoices, transactions, audit) and sends it with every call; each route hydrates it into an `AsyncLocalStorage` context for that request and returns the updated snapshot (the agent stream carries it as a final `data-snapshot` part). That makes the hosted demo safe on serverless (no cross-instance drift, no database) and gives every visitor an isolated copy of the business. In sandbox mode PayPal is the source of truth for invoices, transactions and disputes; the snapshot carries only the policy, reminder history, chase overrides and audit log. Server-to-server callers (PayPal webhooks, Vercel Cron) use a process-global store.
+
 **How a tool call flows.** The model proposes a tool call. The AI SDK's `toolApproval` hook asks Chaser's policy engine (`src/lib/policy/engine.ts`), a pure function over the current invoices, disputes and the user's policy. It answers *allow* (execute now), *ask* (stream an `approval-requested` part; the UI renders a card; the SDK resumes after the user's answer) or *deny* (the model receives an `execution-denied` result with the reason and reports it). Every execution and every decision is written to the audit timeline with its reason.
 
 ### PayPal capabilities used

@@ -183,3 +183,9 @@ export function money(n: number, currency = "USD"): string {
 export function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+/** What every state-bearing API response looks like: a view for the UI plus the opaque snapshot to send back. */
+export interface StatePayload<P = unknown> {
+  view: CommandCenterState & { policy: P; version: number };
+  snapshot: unknown;
+}

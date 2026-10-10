@@ -1,6 +1,6 @@
 # Submission kit - PayPal AI Hackathon (Devpost)
 
-Deadline: **2026-11-12 12:00 PST**. Register first: https://paypalaihackathon.devpost.com/register
+Deadline: **2026-11-12 12:00 PST**. Registration: done. Live demo: **https://chaser-six.vercel.app** (Vercel Hobby, auto-deploys from `main`; mock PayPal + keyless planner, no env vars).
 
 ## A. Devpost fields (paste as-is, edit links)
 
@@ -20,12 +20,12 @@ Chaser is an accounts-receivable agent with a command center. You describe the w
 
 *How we built it*
 - PayPal: the PayPal Agent Toolkit (`@paypal/agent-toolkit` 1.11) on the sandbox: Invoicing v2 (create, send, remind, record payment, record refund, QR, search), Transaction Search (`list_transactions`), Payments v2 (`create_refund`), Disputes v1 (list, get, accept), Shipment Tracking, Catalog and Subscriptions. PayPal Webhooks (signature-verified via `verify-webhook-signature`) drive reactive reconciliation and dispute triage. A seeder populates the sandbox through the toolkit.
-- AI: Vercel AI SDK 7 agent loop (`streamText`, multi-step tools, `toolApproval` for human-in-the-loop) with Gemini / Groq / Nemotron on free tiers. A policy engine evaluates every tool call (allow / ask / deny) before it runs. Deterministic tools (`propose_collections`, `match_payments`) give the model a plan to act on, so small models behave. A keyless rule-based planner implements the same `LanguageModelV3` interface so the product runs end-to-end with no API keys.
+- AI: Vercel AI SDK 7 agent loop (`streamText`, multi-step tools, `toolApproval` for human-in-the-loop) with Gemini / Groq / Nemotron on free tiers. A policy engine evaluates every tool call (allow / ask / deny) before it runs. Deterministic tools (`propose_collections`, `match_payments`) give the model a plan to act on, so small models behave. A keyless rule-based planner implements the same `LanguageModelV3` interface so the product runs end-to-end with no API keys, which is also how the hosted demo runs.
 - UI: Next.js 16 App Router + React 19, AG Grid Community for the invoice, transaction and dispute grids (inline policy editing, selection-driven agent actions, live updates, custom renderers, row rules, pinned totals, theming API), approval cards rendered from the SDK's typed tool parts.
-- Ops: Vercel Hobby, daily Vercel Cron sweep that only performs policy-allowed actions, 42 vitest tests including the full agent loop.
+- Ops: Vercel Hobby; the server is stateless between requests (the browser carries its demo snapshot, hydrated per request), so the hosted demo is serverless-safe and every visitor gets an isolated copy of the business. Daily Vercel Cron sweep that only performs policy-allowed actions. 46 vitest tests including the full agent loop.
 
 *Challenges we ran into*
-The toolkit targets Vercel AI SDK v4 while the current SDK is v7, so we wrote an adapter that keeps the official zod schemas and descriptions but re-wraps execution and inserts the policy gate. A few toolkit schema quirks (string quantities, a no-spaces regex on `accept_dispute_claim.note`, no `payment_term` on `create_invoice`) needed prompt guidance and tests. Designing the approval flow so the agent can be *stopped* by policy without the conversation dying took iteration: denied calls now return a reason the model explains back to you.
+The toolkit targets Vercel AI SDK v4 while the current SDK is v7, so we wrote an adapter that keeps the official zod schemas and descriptions but re-wraps execution and inserts the policy gate. A few toolkit schema quirks (string quantities, a no-spaces regex on `accept_dispute_claim.note`, no `payment_term` on `create_invoice`) needed prompt guidance and tests. On Vercel, in-memory state drifted between function instances, so we moved the demo state into the client and hydrate it per request. Designing the approval flow so the agent can be *stopped* by policy without the conversation dying took iteration: denied calls now return a reason the model explains back to you.
 
 *Accomplishments that we're proud of*
 The whole product runs with zero keys, which also made it testable: the end-to-end suite runs the real AI SDK loop with the real policy gate. The reconciliation matcher handles the messy cases (partial payments, one payment for two invoices, memo hints). Reminders read like a person wrote them.
@@ -40,10 +40,10 @@ Multi-merchant auth (PayPal Log In), evidence submission through the Disputes AP
 `paypal`, `paypal-agent-toolkit`, `paypal-invoicing`, `paypal-webhooks`, `vercel-ai-sdk`, `next.js`, `react`, `typescript`, `ag-grid`, `gemini`, `groq`, `vercel`, `zod`, `vitest`
 
 **Try it out** links
-- GitHub: `https://github.com/vigohan95/chaser` (public, MIT license file in the About panel)
-- Live demo: `https://chaser-<hash>.vercel.app` (mock mode, no sign-in; click "Reset demo" to restore data)
+- Live demo: `https://chaser-six.vercel.app` (no sign-in; mock PayPal + keyless planner; "Reset demo" restores data; each visitor has their own copy)
+- GitHub: `https://github.com/vigohan95/chaser` (public, MIT license file visible in the About panel)
 
-**Video**: YouTube, Public, under 3:00 (script in section B).
+**Video**: YouTube, Public, under 3:00 (plan in section B).
 
 **Image gallery** (1280x720 PNGs, capture from the running app)
 1. Command center with overdue invoices colour-coded and the agent drawer open
@@ -51,6 +51,7 @@ Multi-merchant auth (PayPal Log In), evidence submission through the Disputes AP
 3. Reconciliation result: combined payment split across two invoices
 4. Audit timeline with policy decisions
 5. Architecture diagram (export the README Mermaid)
+6. (If the sandbox segment is recorded) the same invoice in sandbox.paypal.com
 
 **Hackathon-specific fields**
 - *Tools used (AI)*: Vercel AI SDK 7; Google Gemini 2.5 Flash via AI Studio (or Groq gpt-oss-120b) for the agent; a rule-based fallback planner; Claude Code assisted development.
@@ -58,49 +59,62 @@ Multi-merchant auth (PayPal Log In), evidence submission through the Disputes AP
 - *New or existing project*: New.
 - *Team*: solo.
 
-## B. Demo video script (target 2:45; OBS screen capture, 1080p, narration via edge-tts or your voice, no music)
+## B. Demo video plan (final; target 2:50, hard cap 2:58)
 
-| Time | On screen | Narration |
+Recording setup: Chrome at 1440x900, dark-mode off, https://chaser-six.vercel.app freshly opened in a new tab (fresh snapshot). OBS screen capture at 1080p30, narration recorded separately (your voice or edge-tts `en-US-GuyNeural`), no music, cut in a free editor (Shotcut/DaVinci) or `ffmpeg`. Keep the cursor slow; let each result sit for a beat. If you record the sandbox segment (section D), insert it at 1:48 and trim 10 s elsewhere.
+
+| Time | Shot (on the live site unless noted) | Voice-over |
 |---|---|---|
-| 0:00-0:12 | Title card "Chaser - an AI agent that collects your invoices on PayPal", then the grid with INV-0001 "37d overdue" in red | "Freelancers spend hours a week chasing money. Chaser is an AI agent that collects it for them, on PayPal, inside rules they set. Everything you see is the PayPal sandbox." |
-| 0:12-0:35 | Pan the AG Grid: sort by overdue, filter "Acme", select two rows, open the Policy panel, change "Ask me for refunds over" to 500 | "The command center is an AG Grid: 20 invoices, overdue days colour-coded, chasing policy editable per row. The policy says: friendly nudge at 3 days, firm at 10, final at 21; accept disputes under $20; ask me before any refund over $500." |
-| 0:35-1:05 | Type "I finished the logo package for Acme Corp, $1,200, net 15". Show tool chips: lookup_customer, create_invoice, send_invoice. New row appears; audit timeline entry | "Tell it what you did. It looks up the client, creates the PayPal invoice through the Agent Toolkit and sends it. Each step is logged with why it was allowed." |
-| 1:05-1:30 | Click "Run collections". Chips for propose_collections then several send_invoice_reminder. Expand one reminder: subject + note quoting the work and pay link. Reminders column updates | "Run collections: the agent applies the policy and writes a different reminder for each client, a final notice for Acme at 37 days, a gentle nudge for Northwind at 5." |
-| 1:30-1:50 | Choose INV-0003 in "Simulate: client pays", click "Fire webhook". Row turns green; audit shows the webhook | "When a client pays, PayPal's webhook hits Chaser and the invoice is reconciled instantly." |
-| 1:50-2:15 | Click "Reconcile payments". Transactions tab shows three UNMATCHED rows becoming matched; the agent's summary explains the $1,400 split across two invoices | "Three payments came in without an invoice link. The agent matches them, including a partial payment and one payment covering two invoices, and records them on PayPal." |
-| 2:15-2:35 | Type "Refund $600 on INV-0007". Approval card appears with the policy reason; click Approve; chip turns green | "Outside the policy, it asks. A $600 refund is over my limit, so I get a card. I approve, and it finishes." |
-| 2:35-2:50 | Click "Review disputes". $15 accepted; $480 shows "draft ready"; open Disputes tab and the evidence pack | "Disputes: the $15 one is accepted automatically, the $480 one gets an evidence pack drafted for me." |
-| 2:50-2:58 | README prize table or architecture diagram, repo URL | "Invoices, payments, disputes, tracking, subscriptions, reporting: one agent, your rules. Built on the PayPal sandbox with the PayPal Agent Toolkit, the Vercel AI SDK and AG Grid." |
+| 0:00-0:10 | Title card: "Chaser - an AI agent that collects your invoices on PayPal" (2 s), then the live command center; zoom on the KPI strip: Outstanding $16,110, Overdue $14,460 | "Freelancers spend hours a week chasing money. Chaser is an AI agent that collects it for them, on PayPal, inside rules they set. Everything here is sandbox money." |
+| 0:10-0:30 | Scroll the AG Grid right to the Overdue and Chase stage columns; click the Overdue header to sort; click Policy, hover the thresholds | "The command center is an AG Grid: twenty invoices, overdue days colour-coded, and the chasing policy is just configuration. Friendly nudge at three days, firm at ten, final at twenty-one. Accept disputes under twenty dollars. Ask me before any refund over five hundred." |
+| 0:30-0:58 | Type in the drawer: `I finished the logo package for Acme Corp, $1,200, net 15`. Tool chips appear: Look up client, Create invoice, Send invoice. New row INV-0021 at the top; click the Audit tab briefly | "Tell it what you did. It looks up the client, creates the PayPal invoice through the PayPal Agent Toolkit and sends it. Every step lands in an audit timeline with the reason it was allowed." |
+| 0:58-1:25 | Back on Invoices. Click Run collections. Chips: Plan collections, then nine Send reminder chips; expand one chip to show subject and note quoting the work and pay link; the Reminders column updates | "Run collections. The agent applies the policy and writes a different reminder for each client: a final notice for Acme at thirty-seven days, a gentle nudge for Northwind at five. Each one quotes the actual work and the pay link." |
+| 1:25-1:48 | Click Reconcile payments. Switch to the Transactions tab: the three UNMATCHED rows turn into invoice chips; read the agent summary line about the $1,400 split | "Three payments came in without an invoice link. The agent matches them, including a partial payment and one payment covering two invoices, explains each match, and records them on PayPal." |
+| 1:48-2:05 | Pick INV-0003 in "Simulate: client pays", click Fire webhook; the row turns green, Outstanding drops | "When a client pays, PayPal's webhook hits Chaser and the invoice is reconciled on the spot." |
+| 2:05-2:28 | Type `Refund $600 on INV-0007`. The amber approval card appears with the policy reason; click Approve; the chip turns green and the summary shows the refund id | "Outside the policy, it asks. A six-hundred-dollar refund is over my limit, so I get a card with the reason. I approve, and it finishes the job." |
+| 2:28-2:42 | Click Review disputes. Chips: List disputes, Accept dispute, Draft evidence. Open the Disputes tab and click the $480 row to show the evidence pack | "Disputes: the fifteen-dollar one is accepted automatically, the four-hundred-eighty-dollar one gets an evidence pack drafted for me to submit." |
+| 2:42-2:50 | README prize table or the architecture diagram, then the repo and live URLs | "Invoices, payments, disputes, tracking, subscriptions, reporting: one agent, your rules. Built on the PayPal sandbox with the PayPal Agent Toolkit, the Vercel AI SDK and AG Grid." |
 
-Recording notes: start from **Reset demo** so the numbers match; run `npm run dev` with a Gemini key for natural reminder copy (or without for the deterministic planner, which also works); keep the browser at 1440x900 so the drawer and grid both fit.
+Optional sandbox insert (adds credibility for "Best Use of PayPal + AI"; 15 s, replaces 1:48-2:05 and trims 5 s from 0:10-0:30): split screen of the local app in sandbox mode and https://www.sandbox.paypal.com showing the same invoice number, then paying it as the sandbox buyer and clicking Refresh in Chaser so it flips to PAID. Voice-over: "Here is the same flow against the real PayPal sandbox: the invoice exists on PayPal, the buyer pays it, and Chaser reconciles it."
 
 ## C. What the user must do (in order)
 
-1. **Devpost**: register at https://paypalaihackathon.devpost.com/register and click "Join hackathon".
-2. **PayPal sandbox app**: https://developer.paypal.com/dashboard/applications/sandbox -> Create App (name `chaser-sandbox`, type Merchant) -> copy **Client ID** and **Secret** into `work/hackathons/paypal-chaser/.env.local` as `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`, set `MOCK_PAYPAL=0`. Do not paste them into chat. Note the sandbox *personal* account login under Testing Tools -> Sandbox Accounts (https://developer.paypal.com/dashboard/accounts) for paying invoices in the video.
-3. **LLM key** (one): Google AI Studio https://aistudio.google.com/apikey (`GOOGLE_GENERATIVE_AI_API_KEY`) or Groq https://console.groq.com/keys (`GROQ_API_KEY`). Paste into `.env.local`.
-4. **GitHub**: Claude creates the public repo `vigohan95/chaser` with `gh` (MIT license shows in About). Nothing for you to do if `gh auth status` is logged in as vigohan95.
-5. **Vercel**: https://vercel.com/signup with GitHub -> Import `vigohan95/chaser` -> add environment variables (list below) -> Deploy. Hobby plan, no card.
-6. **Webhook (optional but good for the video)**: Dashboard -> your sandbox app -> Add Webhook -> URL `https://<your-vercel-domain>/api/webhooks/paypal`, events `INVOICING.INVOICE.PAID`, `INVOICING.INVOICE.CANCELLED`, `PAYMENT.CAPTURE.COMPLETED`, `CUSTOMER.DISPUTE.CREATED`, `CUSTOMER.DISPUTE.RESOLVED`, `BILLING.SUBSCRIPTION.ACTIVATED` -> copy the Webhook ID into `PAYPAL_WEBHOOK_ID`.
-7. **YouTube**: upload the MP4 Claude renders, set Public, paste the link in Devpost.
-8. **Devpost submission**: paste section A, upload gallery images, opt in to the sponsor prizes, submit before 2026-11-12 12:00 PST.
+1. ~~Devpost: register~~ done.
+2. ~~Vercel: import repo~~ done (https://chaser-six.vercel.app).
+3. **Record the video** following section B (nothing to install: the live site is enough). Upload to YouTube as Public.
+4. **Optional sandbox segment** (recommended, ~25 min, local only): see section D.
+5. **Devpost submission**: paste section A, upload gallery images, opt in to the sponsor prizes, add the YouTube link, submit before 2026-11-12 12:00 PST.
 
-### Environment variables for Vercel
+## D. Sandbox run: recommendation and exact steps
 
-| Name | Value |
+**Recommendation.** Keep the public demo in mock mode. It is deterministic, isolated per visitor, costs nothing, exposes no keys, and the rules only require a working build plus clear run instructions (the README has both). Do a **local** sandbox run once, for the optional video insert and to be able to say truthfully that the toolkit calls were exercised against PayPal. Do **not** put PayPal or Gemini keys on Vercel: strangers would burn the free Gemini quota and create junk in your sandbox, and the mock planner already drives the same tools.
+
+**Local sandbox run (no Vercel changes):**
+1. In `work/hackathons/paypal-chaser/.env.local` (copy from `.env.example`) set:
+   - `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`: https://developer.paypal.com/dashboard/applications/sandbox -> "Default Application" (or create `chaser-sandbox`) -> Client ID / Secret (click "Show").
+   - `MOCK_PAYPAL=0`
+   - `GOOGLE_GENERATIVE_AI_API_KEY`: https://aistudio.google.com/apikey -> Create API key (free tier, no card). Optional; without it the keyless planner runs.
+2. `npm run seed -- --limit=8` creates eight demo invoices in your sandbox through the toolkit and sends them (they appear at https://www.sandbox.paypal.com/invoice/ when logged in as the sandbox *business* account).
+3. `npm run dev`, open http://localhost:3000: the grid now lists the real sandbox invoices (the mode chip says "PayPal sandbox").
+4. Pay one invoice as the sandbox *personal* account: https://developer.paypal.com/dashboard/accounts -> the personal account -> "View/Edit account" for the login -> open the invoice's pay link in a private window -> pay. Click **Refresh** in Chaser; the invoice flips to PAID (Transaction Search in sandbox can lag a few minutes; the invoice status does not).
+5. "Run collections" / "Reconcile payments" now act on PayPal. Tell Claude if anything errors (the sandbox mappers have only been run against the mock so far).
+
+**Only if you later want the hosted site on the sandbox too** (Vercel -> Project -> Settings -> Environment Variables, then redeploy):
+
+| Name | Where the value comes from |
 |---|---|
-| `MOCK_PAYPAL` | `1` for the public demo (no sandbox calls from strangers), `0` for your own sandbox run |
-| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | from step 2 (only if `MOCK_PAYPAL=0`) |
-| `PAYPAL_WEBHOOK_ID` | from step 6 |
-| `GOOGLE_GENERATIVE_AI_API_KEY` or `GROQ_API_KEY` | from step 3 (omit to use the keyless planner) |
-| `CRON_SECRET` | any long random string |
-| `MERCHANT_BUSINESS_NAME`, `MERCHANT_GIVEN_NAME`, `MERCHANT_SURNAME`, `MERCHANT_EMAIL` | how invoices are signed |
+| `MOCK_PAYPAL` | `0` |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | PayPal developer dashboard, Sandbox app (step 1 above) |
+| `PAYPAL_WEBHOOK_ID` | PayPal dashboard -> the sandbox app -> Webhooks -> Add: URL `https://chaser-six.vercel.app/api/webhooks/paypal`, events `INVOICING.INVOICE.PAID`, `INVOICING.INVOICE.CANCELLED`, `PAYMENT.CAPTURE.COMPLETED`, `CUSTOMER.DISPUTE.CREATED`, `CUSTOMER.DISPUTE.RESOLVED`, `BILLING.SUBSCRIPTION.ACTIVATED` -> copy the Webhook ID |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | https://aistudio.google.com/apikey |
+| `CRON_SECRET` | any long random string (enables the daily sweep; without it `/api/cron/collections` answers 401) |
+| `MERCHANT_BUSINESS_NAME`, `MERCHANT_GIVEN_NAME`, `MERCHANT_SURNAME`, `MERCHANT_EMAIL` | how invoices are signed (optional) |
 
-## D. Pre-submission checklist
+## E. Pre-submission checklist
 
-- [ ] `npm test`, `npm run build`, `npm run lint` all green on the commit you submit
+- [ ] `npm test`, `npm run build`, `npm run lint` all green on the commit you submit (CI-free: run locally)
 - [ ] Repo public; LICENSE visible in GitHub About; README has setup steps and the PayPal capability list
 - [ ] No secrets in git (`git grep -i "client_secret\|api_key" -- ':!*.example' ':!*.md'` is empty)
-- [ ] Vercel URL loads in a private window; "Reset demo" works
+- [ ] https://chaser-six.vercel.app loads in a private window; "Reset demo" works; the approval card appears for `Refund $600 on INV-0007`
 - [ ] Video < 3:00, Public, shows the app running end to end and says "sandbox"
-- [ ] Devpost: tagline, about, built-with tags, links, video, 5 images, sponsor opt-ins, AI tools used
+- [ ] Devpost: tagline, about, built-with tags, links, video, 5-6 images, sponsor opt-ins, AI tools used

@@ -16,7 +16,7 @@ function Num({ label, value, onChange, prefix, suffix }: { label: string; value:
   );
 }
 
-export default function PolicyPanel({ policy, onSaved }: { policy: Policy; onSaved: (p: Policy) => void }) {
+export default function PolicyPanel({ policy, onSave }: { policy: Policy; onSave: (p: Policy) => Promise<string | undefined> }) {
   const [draft, setDraft] = useState<Policy>(policy);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string>("");
@@ -30,12 +30,9 @@ export default function PolicyPanel({ policy, onSaved }: { policy: Policy; onSav
   const save = async () => {
     setSaving(true);
     setMsg("");
-    const res = await fetch("/api/policy", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) });
-    const data = await res.json();
+    const error = await onSave(draft);
     setSaving(false);
-    if (!res.ok) return setMsg(data.error ?? "Failed");
-    onSaved(data);
-    setMsg("Saved. The agent uses this on its next action.");
+    setMsg(error ?? "Saved. The agent uses this on its next action.");
   };
 
   const r = draft.reminders;
