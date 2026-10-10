@@ -52,6 +52,7 @@ export default function CommandCenter() {
   }, []);
 
   const chat = useChat({
+    id: "chaser-command-center",
     transport: new DefaultChatTransport({ api: "/api/agent" }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onFinish: () => refresh(),
@@ -59,17 +60,18 @@ export default function CommandCenter() {
   });
   const busy = chat.status === "streaming" || chat.status === "submitted";
 
+  // Initial load, then poll: fast while the agent is acting (tool results land in the grid live),
+  // slow otherwise (webhooks / cron). Re-arms whenever `busy` flips, which also refreshes right after a run.
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  // Poll faster while the agent is acting (tool results land in the grid live), slowly otherwise (webhooks/cron).
-  useEffect(() => {
+    const first = setTimeout(refresh, 0);
     const id = setInterval(refresh, busy ? 1200 : 6000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
   }, [busy, refresh]);
 
-  const now = useMemo(() => new Date(state?.now ?? Date.now()), [state?.now]);
+  const now = useMemo(() => new Date(state?.now ?? 0), [state?.now]);
   const kpis = useMemo(() => {
     if (!state) return null;
     const open = state.invoices.filter(isOpenInvoice);

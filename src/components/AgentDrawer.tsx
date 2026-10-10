@@ -144,9 +144,12 @@ export default function AgentDrawer({ chat, llm, pending }: { chat: Helpers; llm
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
-  useEffect(() => {
+  // Prefill from the grid ("Ask about selected"): derived state, no effect.
+  const [seenPending, setSeenPending] = useState(pending);
+  if (pending !== seenPending) {
+    setSeenPending(pending);
     if (pending) setInput(pending);
-  }, [pending]);
+  }
 
   const send = (text: string) => {
     const t = text.trim();

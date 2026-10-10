@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Policy } from "@/lib/policy/schema";
 
 function Num({ label, value, onChange, prefix, suffix }: { label: string; value: number; onChange: (v: number) => void; prefix?: string; suffix?: string }) {
@@ -20,7 +20,12 @@ export default function PolicyPanel({ policy, onSaved }: { policy: Policy; onSav
   const [draft, setDraft] = useState<Policy>(policy);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string>("");
-  useEffect(() => setDraft(policy), [policy]);
+  // Re-sync the draft when a new policy arrives from the server (derived state, no effect).
+  const [seen, setSeen] = useState(policy);
+  if (policy !== seen) {
+    setSeen(policy);
+    setDraft(policy);
+  }
 
   const save = async () => {
     setSaving(true);
