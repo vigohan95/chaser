@@ -4,6 +4,8 @@
 
 **Chaser matches every PayPal payment to the right invoice and handles what comes after.**
 
+**Run against a real PayPal sandbox business account on 2026-10-10:** 8 invoices created and sent through the Agent Toolkit, 5 reminders sent by the agent loop under the policy gate (3 skipped as not yet due, each decision citing its rule), an external $800 payment recorded (`EXTR-3W091620YC457544T`, INV-0006 → PARTIALLY_PAID), and the Disputes API `provide-evidence` / `send-message` calls reaching PayPal (authenticated 404 on a probe id; no success claimed). Call-by-call JSON, the audit dump and screenshots are in [`docs/sandbox-evidence/`](docs/sandbox-evidence/); the table in [Verified on the PayPal sandbox](#verified-on-the-paypal-sandbox-2026-10-10) says what was and was not exercised.
+
 Money arrives on PayPal and the work starts: a $1,400 transfer that covers two invoices, a $300 "part payment, rest next week", a $480 dispute from a client who already approved the work. Chaser is an accounts-receivable agent that does that work on PayPal, inside a policy you write as data:
 
 - **Reconciliation you can edit.** The agent matches unlinked payments to open invoices (exact, partial, one payment across several invoices) with a confidence and a reason for each. An AG Grid **match review** lets you change any allocation, split a payment, or point it at a different invoice before it is recorded on PayPal.
@@ -12,7 +14,15 @@ Money arrives on PayPal and the work starts: a $1,400 transfer that covers two i
 
 It also chases overdue invoices with reminders written from each invoice's actual line items, creates and sends invoices from a sentence, adds shipment tracking, and sets up retainers as subscriptions. Anything outside the policy becomes an approval card.
 
-Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/) on the **PayPal sandbox** (play money only), with the **PayPal Agent Toolkit**, the **Vercel AI SDK** and **AG Grid Community**. Live demo: **https://chaser-six.vercel.app** (demo data, no sign-in, every visitor gets an isolated copy).
+Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/) on the **PayPal sandbox** (play money only), with the **PayPal Agent Toolkit**, the **Vercel AI SDK** and **AG Grid Community**. Live demo: **https://chaser-six.vercel.app** (demo data, no sign-in, every visitor gets an isolated copy; the hosted site runs the keyless rule planner, the drawer header says `model: rule planner (no LLM key)`).
+
+## Why not PayPal's built-in reminders, or a chat bot over the toolkit
+
+PayPal already sends invoices and automatic reminders (`setup_invoice_auto_reminders`), and a chat bot over the toolkit can call `send_invoice_reminder`. Chaser is for what those do not cover:
+
+- **Payments that PayPal cannot link to an invoice.** [`src/lib/agent/reconcile.ts`](src/lib/agent/reconcile.ts) is a pure matcher (invoice number in the memo, payer + exact balance, payer + subset-sum across several invoices, payer + partial on the oldest) that returns a confidence and a reason per allocation; one transaction can carry several allocations. The match review ([`src/components/MatchReview.tsx`](src/components/MatchReview.tsx)) lets you edit, split or re-point lines before `record_payment_for_invoice` writes them to PayPal.
+- **Dispute responses through the API the toolkit does not expose.** [`src/lib/paypal/rest.ts`](src/lib/paypal/rest.ts) calls `provide-evidence` (multipart) and `send-message` with the evidence pack assembled from invoice line items, payment record, shipment tracking and reminder history; the call path is in [`docs/sandbox-evidence/disputes-api-probe.json`](docs/sandbox-evidence/disputes-api-probe.json).
+- **A policy you edit as data, and a ledger that names the field.** [`src/lib/policy/engine.ts`](src/lib/policy/engine.ts) (schema: [`src/lib/policy/schema.ts`](src/lib/policy/schema.ts)) answers allow / ask / deny for every tool call and cites the policy field; every row of [`docs/sandbox-evidence/2026-10-10-collections-audit.json`](docs/sandbox-evidence/2026-10-10-collections-audit.json) carries its `rule`.
 
 ## 60-second tour (no keys needed)
 
