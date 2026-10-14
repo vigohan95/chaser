@@ -1,6 +1,7 @@
 import type { Dispute, Invoice } from "../paypal/types";
 import { round2 } from "../paypal/types";
 import type { Policy } from "./schema";
+import { promiseStatus } from "../agent/promise";
 
 export type Decision = "allow" | "approve" | "deny";
 
@@ -21,7 +22,7 @@ export interface EvaluationContext {
 }
 
 /** Tools that only read state. They never need approval. */
-export const READ_ONLY_PREFIXES = ["list_", "get_", "search_", "show_", "generate_invoice_qr_code", "generate_invoice_number", "propose_", "match_", "lookup_", "draft_", "summarize_"];
+export const READ_ONLY_PREFIXES = ["list_", "get_", "search_", "show_", "generate_invoice_qr_code", "generate_invoice_number", "propose_", "match_", "lookup_", "draft_", "summarize_", "classify_"];
 
 export function isReadOnlyTool(name: string): boolean {
   return READ_ONLY_PREFIXES.some((p) => name.startsWith(p));
@@ -113,6 +114,9 @@ export function evaluateAction(tool: string, rawInput: unknown, ctx: EvaluationC
       if (inv.chase_override === "paused") {
         return { decision: "deny", reason: `Chasing is paused for ${inv.invoice_number}.`, summary, rule: "invoice.chase_override" };
       }
+      if (policy.promises.pauseChasing && promiseStatus(inv, now, policy) === "open") {
+        return { decision: "deny", reason: `${inv.client.business ?? inv.client.email} promised to pay ${inv.invoice_number} by ${inv.promise!.pay_by}; chasing is paused until then (grace ${policy.promises.graceDays} day${policy.promises.graceDays === 1 ? "" : "s"}).`, summary, rule: "promises.pauseChasing" };
+      }
       if (inv.reminders.length >= policy.reminders.maxReminders) {
         return { decision: "deny", reason: `${inv.invoice_number} already received ${inv.reminders.length} reminders (max ${policy.reminders.maxReminders}).`, summary, rule: "reminders.maxReminders" };
       }
@@ -197,6 +201,20 @@ export function evaluateAction(tool: string, rawInput: unknown, ctx: EvaluationC
 
     case "set_chase_override": {
       return { decision: "allow", reason: "Local setting only.", summary: `Set chasing to ${String(input.override ?? "")}`, rule: "default-allow" };
+    }
+
+    case "record_promise": {
+      const inv = findInvoice(ctx, input.invoice_id);
+      const payBy = typeof input.pay_by === "string" ? input.pay_by : "";
+      const amt = num(input.amount);
+      const summary = `Record promise: ${inv?.client.business ?? inv?.client.email ?? "client"} pays ${amt !== undefined ? fmt(amt, ccy) : "the balance"} on ${inv?.invoice_number ?? String(input.invoice_id ?? "")} by ${payBy}`;
+      const day = new Date(payBy + "T00:00:00Z").getTime();
+      if (!payBy || Number.isNaN(day)) return { decision: "deny", reason: "A promise needs a date (yyyy-mm-dd).", summary, rule: "promises.maxDays" };
+      const daysOut = Math.ceil((day - now.getTime()) / 86_400_000);
+      if (daysOut < 0) return { decision: "deny", reason: `${payBy} is in the past.`, summary, rule: "promises.maxDays" };
+      if (daysOut > policy.promises.maxDays) return { decision: "approve", reason: `${payBy} is ${daysOut} days out, beyond your ${policy.promises.maxDays}-day limit for pausing a chase on a promise.`, summary, rule: "promises.maxDays" };
+      if (inv && amt !== undefined && amt > inv.due + policy.reconciliation.amountTolerance) return { decision: "approve", reason: `${fmt(amt, ccy)} promised exceeds the ${fmt(inv.due, ccy)} due on ${inv.invoice_number}; please confirm.`, summary, rule: "promises.maxDays" };
+      return { decision: "allow", reason: `Promise ${daysOut} day${daysOut === 1 ? "" : "s"} out, within promises.maxDays = ${policy.promises.maxDays}; chasing pauses until ${payBy}${policy.promises.brokenEscalates ? " and escalates if it is not kept" : ""}.`, summary, rule: "promises.maxDays" };
     }
 
     default:

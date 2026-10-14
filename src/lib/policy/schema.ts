@@ -32,6 +32,16 @@ export const PolicySchema = z.object({
     /** Tools the agent may never run. */
     neverAllow: z.array(z.string()).default([]),
   }),
+  promises: z.object({
+    /** Stop reminders while a recorded promise to pay is open. */
+    pauseChasing: z.boolean().default(true),
+    /** Days after the promised date before the promise counts as broken. */
+    graceDays: z.number().int().min(0).max(30).default(1),
+    /** A broken promise moves the next reminder up one stage and cites the promise. */
+    brokenEscalates: z.boolean().default(true),
+    /** Promises further out than this need your approval to record. */
+    maxDays: z.number().int().min(1).max(365).default(30),
+  }),
   reconciliation: z.object({
     /** Record exact matches (amount == due, same payer) without asking. */
     autoRecordExactMatches: z.boolean().default(true),
@@ -49,6 +59,7 @@ export const DEFAULT_POLICY: Policy = PolicySchema.parse({
   reminders: {},
   disputes: {},
   approvals: {},
+  promises: {},
   reconciliation: {},
 });
 
@@ -59,6 +70,7 @@ export function parsePolicy(input: unknown): Policy {
     reminders: { ...DEFAULT_POLICY.reminders, ...(partial.reminders as object | undefined) },
     disputes: { ...DEFAULT_POLICY.disputes, ...(partial.disputes as object | undefined) },
     approvals: { ...DEFAULT_POLICY.approvals, ...(partial.approvals as object | undefined) },
+    promises: { ...DEFAULT_POLICY.promises, ...(partial.promises as object | undefined) },
     reconciliation: { ...DEFAULT_POLICY.reconciliation, ...(partial.reconciliation as object | undefined) },
     currency: partial.currency ?? DEFAULT_POLICY.currency,
   });

@@ -74,7 +74,7 @@ function toPayPalInvoice(inv: Invoice) {
       inv.links.view && { href: inv.links.view, rel: "self", method: "GET" },
       inv.links.pay && { href: inv.links.pay, rel: "payer-view", method: "GET" },
     ].filter(Boolean),
-    chaser: { reminders_sent: inv.reminders.length, last_reminder_at: inv.reminders.at(-1)?.at, chase_override: inv.chase_override },
+    chaser: { reminders_sent: inv.reminders.length, last_reminder_at: inv.reminders.at(-1)?.at, chase_override: inv.chase_override, promise: inv.promise },
   };
 }
 

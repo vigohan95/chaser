@@ -10,7 +10,7 @@
  * (PayPal webhooks, Vercel Cron) fall back to a process-global Store.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { AuditEntry, ChaseOverride, Dispute, Invoice, Product, ReminderRecord, Subscription, SubscriptionPlan, Tracking, Transaction } from "./paypal/types";
+import type { AuditEntry, ChaseOverride, Dispute, Invoice, Product, PromiseToPay, ReminderRecord, Subscription, SubscriptionPlan, Tracking, Transaction } from "./paypal/types";
 import { buildDisputes, buildInvoices, buildPlans, buildProducts, buildSubscriptions, buildTrackings, buildTransactions, FIRST_FREE_SEQ } from "./paypal/fixtures";
 import { DEFAULT_POLICY, parsePolicy, type Policy } from "./policy/schema";
 import { isMockPayPal } from "./env";
@@ -18,6 +18,7 @@ import { isMockPayPal } from "./env";
 export interface Overlay {
   reminders: ReminderRecord[];
   chase_override: ChaseOverride;
+  promise?: PromiseToPay;
 }
 
 /** What Chaser remembers about a dispute that PayPal does not store: the drafted pack and when it was submitted. */

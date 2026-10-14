@@ -5,6 +5,7 @@ import type { CellValueChangedEvent, ColDef, ICellRendererParams, RowClassRules,
 import { useCallback, useMemo, useRef, useState } from "react";
 import { explainStage, overdueDays, stageFor, highestStageSent, thresholdsFor } from "@/lib/agent/chase";
 import { payerProfiles, predictInvoice, unknownProfile, type RiskBand } from "@/lib/agent/payer-history";
+import { describePromise, promiseStatus, type PromiseStatus } from "@/lib/agent/promise";
 import type { Invoice, Transaction } from "@/lib/paypal/types";
 import { isOpenInvoice } from "@/lib/paypal/types";
 import type { Policy } from "@/lib/policy/schema";
@@ -19,6 +20,8 @@ interface Row extends Invoice {
   predictedDays: number;
   risk: RiskBand | "";
   riskBasis: string;
+  promiseState: PromiseStatus | "";
+  promiseLabel: string;
   clientName: string;
   work: string;
 }
@@ -35,6 +38,22 @@ function RiskBadge(p: ICellRendererParams<Row, string>) {
   return (
     <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${RISK_STYLE[p.value] ?? ""}`} title={p.data?.riskBasis}>
       {p.value}
+    </span>
+  );
+}
+
+const PROMISE_STYLE: Record<string, string> = {
+  open: "border-accent text-accent",
+  kept: "text-ok",
+  broken: "border-red-300 text-bad",
+};
+
+function PromiseCell(p: ICellRendererParams<Row, string>) {
+  const d = p.data;
+  if (!d || !p.value) return null;
+  return (
+    <span className={`chip ${PROMISE_STYLE[p.value] ?? ""}`} title={`${d.promiseLabel}${d.promise?.quote ? ` - "${d.promise.quote}"` : ""}`}>
+      {p.value === "open" ? `promised ${shortDate(d.promise?.pay_by)}` : p.value === "broken" ? `broken: ${shortDate(d.promise?.pay_by)}` : "promise kept"}
     </span>
   );
 }
@@ -104,12 +123,19 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
       const t = thresholdsFor(policy, i.chase_override, profile.band);
       const nextDue = sent === "none" ? "friendly" : sent === "friendly" ? "firm" : sent === "firm" ? "final" : "none";
       const nextDay = nextDue === "friendly" ? t.friendly : nextDue === "firm" ? t.firm : t.final;
+      const pstate = promiseStatus(i, now, policy);
       let nextStage = "";
       let why = "";
       if (open) {
         if (i.chase_override === "paused") {
           nextStage = "paused";
           why = "Chasing paused for this invoice (invoice.chase_override).";
+        } else if (pstate === "open" && policy.promises.pauseChasing) {
+          nextStage = `wait until ${shortDate(i.promise!.pay_by)}`;
+          why = `Client ${describePromise(i.promise!, "open")}; chasing paused until then + ${policy.promises.graceDays} grace day(s) (promises.pauseChasing).`;
+        } else if (pstate === "broken" && policy.promises.brokenEscalates && sent !== "final") {
+          nextStage = `${nextDue} now (broken promise)`;
+          why = `Client ${describePromise(i.promise!, "broken")}; the next reminder escalates one stage and cites it (promises.brokenEscalates).`;
         } else if (i.reminders.length >= policy.reminders.maxReminders) {
           nextStage = "max reminders";
           why = `${i.reminders.length} reminders sent (reminders.maxReminders = ${policy.reminders.maxReminders}).`;
@@ -126,7 +152,7 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
       }
       const pred = open ? predictInvoice(i, profile, now) : undefined;
       // Non-open rows sort to the bottom of the (default) overdue sort.
-      return { ...i, overdue: open ? od : -100000, nextStage, why, predicted: pred?.predicted_pay_date ?? "", predictedDays: pred?.days_until_predicted ?? 0, risk: pred?.risk ?? "", riskBasis: pred?.basis ?? "", clientName: i.client.business ?? `${i.client.given_name} ${i.client.surname}`, work: i.items.map((x) => x.name).join(", ") };
+      return { ...i, overdue: open ? od : -100000, nextStage, why, predicted: pred?.predicted_pay_date ?? "", predictedDays: pred?.days_until_predicted ?? 0, risk: pred?.risk ?? "", riskBasis: pred?.basis ?? "", promiseState: pstate ?? "", promiseLabel: pstate && i.promise ? describePromise(i.promise, pstate) : "", clientName: i.client.business ?? `${i.client.given_name} ${i.client.surname}`, work: i.items.map((x) => x.name).join(", ") };
     });
   }, [invoices, transactions, policy, now]);
 
@@ -142,7 +168,8 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
       { field: "overdue", headerName: "Overdue", width: 125, cellRenderer: OverdueCell, sort: "desc" },
       { field: "predicted", headerName: "Predicted pay", width: 150, cellRenderer: PredictedCell, headerTooltip: "Due date shifted by this client's median lateness on their own paid PayPal invoices" },
       { field: "risk", headerName: "Risk", width: 95, cellRenderer: RiskBadge, headerTooltip: "Payer band from PayPal payment history: reliable / typical / late-risk / unknown" },
-      { field: "nextStage", headerName: "Next action", width: 150, tooltipField: "why", headerTooltip: "What the agent will do next and why (hover a cell)" },
+      { field: "nextStage", headerName: "Next action", width: 170, tooltipField: "why", headerTooltip: "What the agent will do next and why (hover a cell)" },
+      { field: "promiseState", headerName: "Promise", width: 150, cellRenderer: PromiseCell, headerTooltip: "A recorded promise to pay: chasing waits for it; a broken one escalates" },
       { headerName: "Reminders", width: 120, valueGetter: (p) => p.data?.reminders.length ?? 0, valueFormatter: (p) => (p.value ? `${p.value} (last ${shortDate(p.data?.reminders.at(-1)?.at)})` : "none") },
       {
         field: "chase_override",
@@ -172,7 +199,7 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
 
   const pinnedBottom = useMemo(() => {
     const open = rows.filter(isOpenInvoice);
-    return [{ invoice_number: `${rows.length} invoices`, clientName: `${open.length} open`, total: rows.reduce((a, r) => a + r.total, 0), due: open.reduce((a, r) => a + r.due, 0), currency: "USD", status: "", work: "", overdue: 0, nextStage: "", why: "", predicted: "", predictedDays: 0, risk: "", riskBasis: "", reminders: [], items: [], client: { given_name: "", surname: "", email: "" }, id: "__total", paid: 0, refunded: 0, invoice_date: "", due_date: "", chase_override: "default", links: {} } as unknown as Row];
+    return [{ invoice_number: `${rows.length} invoices`, clientName: `${open.length} open`, total: rows.reduce((a, r) => a + r.total, 0), due: open.reduce((a, r) => a + r.due, 0), currency: "USD", status: "", work: "", overdue: 0, nextStage: "", why: "", predicted: "", predictedDays: 0, risk: "", riskBasis: "", promiseState: "", promiseLabel: "", reminders: [], items: [], client: { given_name: "", surname: "", email: "" }, id: "__total", paid: 0, refunded: 0, invoice_date: "", due_date: "", chase_override: "default", links: {} } as unknown as Row];
   }, [rows]);
 
   const onSelectionChanged = useCallback((e: SelectionChangedEvent<Row>) => onSelection(e.api.getSelectedRows()), [onSelection]);

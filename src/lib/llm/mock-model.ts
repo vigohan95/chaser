@@ -150,10 +150,11 @@ function parseTracking(text: string): { number?: string; carrier?: string } {
   return { number: num, carrier };
 }
 
-export type Intent = "refund" | "collections" | "reconcile" | "disputes" | "tracking" | "subscription" | "override" | "status" | "invoice" | "help";
+export type Intent = "refund" | "collections" | "reconcile" | "disputes" | "tracking" | "subscription" | "override" | "status" | "invoice" | "promise" | "help";
 
 export function detectIntent(text: string): Intent {
   const t = text.toLowerCase();
+  if (/\b(promise[sd]?|promise to pay|will pay|'ll pay|pay by|pays? on|paying on|client (?:replied|says|said|wrote|emailed)|reply from|replied)\b/.test(t)) return "promise";
   if (/\brefund\b/.test(t)) return "refund";
   if (/\b(pause|stop chasing|resume|unpause|gentle|aggressive)\b/.test(t)) return "override";
   if (/\b(remind|reminder|chase|chasing|collect|collections|nudge|overdue|late payers?)\b/.test(t)) return "collections";
@@ -463,6 +464,34 @@ function overridePlaybook(turn: Turn): Action {
   return { type: "text", text: `Chasing set to "${override}" for ${ids.join(", ")}. ${override === "paused" ? "I will not send reminders for these until you resume." : ""}` };
 }
 
+function promisePlaybook(turn: Turn): Action {
+  const text = turn.userText;
+  const ids = parseInvoiceNumbers(text);
+  const client = parseClient(text) ?? text.match(/^([A-Z][\w&.'-]*(?:\s+[A-Z][\w&.'-]*)*)\s+(?:says|said|replied|wrote|promised|will)/)?.[1];
+  const classified = first(turn, "classify_client_reply");
+  if (!classified) return { type: "calls", calls: [{ toolName: "classify_client_reply", input: { text, invoice_id: ids[0] } }] };
+  const kind = s(classified.output.kind);
+  const payBy = s(classified.output.pay_by);
+  if (kind === "paid-claim") return { type: "text", text: `The client says payment was already sent (${s(classified.output.evidence)}). Say "reconcile payments" and I will look for it among the unlinked PayPal payments.` };
+  if (kind === "dispute") return { type: "text", text: `This reads like an objection, not a promise (${s(classified.output.evidence)}). I have not changed the chase; tell me how you want to respond, or say "review disputes" if a PayPal dispute was opened.` };
+  if (kind !== "promise" || !payBy) return { type: "text", text: `I could not find a date to record${kind === "promise" ? " (the client promised but gave no date)" : ""}. Tell me the invoice and the date, e.g. "Acme will pay INV-0001 by 2026-10-20".` };
+  let invoiceId = ids[0];
+  if (!invoiceId) {
+    if (!first(turn, "lookup_customer")) return client ? { type: "calls", calls: [{ toolName: "lookup_customer", input: { query: client } }] } : { type: "text", text: "Which client or invoice is this about? e.g. \"Acme says they will pay INV-0001 by the 20th\"." };
+    const c = customerFrom(turn, client);
+    const open = c.invoices.filter((i) => n(i.due) > 0 && ["UNPAID", "SENT", "PARTIALLY_PAID", "PAYMENT_PENDING"].includes(s(i.status))).sort((a, b) => s(a.due_date).localeCompare(s(b.due_date)));
+    if (!open.length) return { type: "text", text: `${client ?? "That client"} has no open invoice to record a promise against.` };
+    invoiceId = s(open[0].invoice_id);
+  }
+  const recorded = first(turn, "record_promise");
+  if (!recorded) {
+    const amount = classified.output.amount !== undefined && classified.output.amount !== null ? n(classified.output.amount) : undefined;
+    return { type: "calls", calls: [{ toolName: "record_promise", input: { invoice_id: invoiceId, pay_by: payBy, ...(amount ? { amount } : {}), source: /\b(client|they|she|he|replied|says|said|wrote)\b/i.test(text) ? "client_reply" : "user", quote: text.slice(0, 300) } }] };
+  }
+  const o = recorded.output;
+  return { type: "text", text: outcomeLine(recorded, () => `Recorded: ${s(o.client)} will pay ${o.promise && j(o.promise).amount ? usd(n(j(o.promise).amount)) : `the ${usd(n(o.balance_due))} balance`} on ${s(o.invoice_number)} by ${payBy}. Chasing is ${s(o.chasing)}; if the money has not arrived by then the next reminder escalates one stage and says so (promises.brokenEscalates). The grid shows the promise on the invoice.`) };
+}
+
 function statusPlaybook(turn: Turn): Action {
   const r = first(turn, "summarize_receivables");
   if (!r) return { type: "calls", calls: [{ toolName: "summarize_receivables", input: {} }] };
@@ -479,6 +508,7 @@ const HELP = `I am Chaser, your receivables agent on PayPal. Try:
 - "Record these payment allocations: <transaction> -> INV-0015 $900.00" - records what you reviewed in the match grid
 - "Shipped the brand book for Northwind, UPS 1Z999AA10123456784" - adds tracking
 - "Set up a $1,500 monthly retainer for Northwind Traders" - creates a subscription
+- "Acme says they will pay INV-0001 by the 20th" - records a promise to pay; chasing pauses, a broken promise escalates
 - "Refund $120 on INV-0007" / "Pause chasing INV-0003" / "What's outstanding?"`;
 
 export function plan(turn: Turn): Action {
@@ -501,6 +531,8 @@ export function plan(turn: Turn): Action {
       return overridePlaybook(turn);
     case "status":
       return statusPlaybook(turn);
+    case "promise":
+      return promisePlaybook(turn);
     default:
       return { type: "text", text: HELP };
   }

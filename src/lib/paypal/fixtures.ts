@@ -77,6 +77,8 @@ interface Spec {
   reminders?: Array<{ daysAgo: number; stage: "friendly" | "firm" | "final" }>;
   reference?: string;
   note?: string;
+  /** A recorded promise to pay: pay_by relative to now (negative = already passed), recorded N days ago. */
+  promise?: { payByInDays: number; recordedDaysAgo: number; amount?: number; quote: string };
 }
 
 const SPECS: Spec[] = [
@@ -85,7 +87,7 @@ const SPECS: Spec[] = [
   { n: 3, client: "northwind", items: [{ name: "Monthly design retainer", description: "September", quantity: 1, unit_amount: 1500 }], issuedDaysAgo: 20, net: 15, status: "UNPAID" },
   { n: 4, client: "harbor", items: [{ name: "Contract illustrations", description: "12 spot illustrations for client-facing guide", quantity: 12, unit_amount: 79.17 }], issuedDaysAgo: 16, net: 14, status: "UNPAID" },
   { n: 5, client: "juniper", items: [{ name: "Menu photography", description: "Half-day shoot + 40 edited images", quantity: 1, unit_amount: 600 }], issuedDaysAgo: 10, net: 30, status: "UNPAID" },
-  { n: 6, client: "solstice", items: [{ name: "Landing page", description: "Design + Webflow build", quantity: 1, unit_amount: 1800 }], issuedDaysAgo: 40, net: 30, status: "PARTIALLY_PAID", paid: 800 },
+  { n: 6, client: "solstice", items: [{ name: "Landing page", description: "Design + Webflow build", quantity: 1, unit_amount: 1800 }], issuedDaysAgo: 40, net: 30, status: "PARTIALLY_PAID", paid: 800, promise: { payByInDays: 4, recordedDaysAgo: 3, quote: "Sent $800 today, the rest goes out next week once the board signs off." } },
   { n: 7, client: "pinecrest", items: [{ name: "Listing video", description: "Edit + color grade", quantity: 3, unit_amount: 700 }], issuedDaysAgo: 26, net: 14, status: "PAID", paid: 2100 },
   { n: 8, client: "vireo", items: [{ name: "API integration sprint", description: "2-week sprint, Stripe to PayPal migration", quantity: 1, unit_amount: 3200 }], issuedDaysAgo: 39, net: 14, status: "PAID", paid: 3200 },
   { n: 9, client: "acme", items: [{ name: "SEO audit", quantity: 1, unit_amount: 750 }], issuedDaysAgo: 8, net: 15, status: "UNPAID" },
@@ -93,7 +95,7 @@ const SPECS: Spec[] = [
   { n: 11, client: "northwind", items: [{ name: "Logo refresh", description: "Includes printed brand book (shipped)", quantity: 1, unit_amount: 1200 }], issuedDaysAgo: 55, net: 15, status: "PAID", paid: 1200 },
   { n: 12, client: "juniper", items: [{ name: "Holiday campaign - deposit", quantity: 1, unit_amount: 300 }], issuedDaysAgo: 6, net: 7, status: "UNPAID" },
   { n: 13, client: "harbor", items: [{ name: "Court exhibit graphics", description: "Timeline + 4 diagrams", quantity: 1, unit_amount: 1350 }], issuedDaysAgo: 35, net: 30, status: "UNPAID" },
-  { n: 14, client: "solstice", items: [{ name: "Email sequence", description: "5-email onboarding flow", quantity: 1, unit_amount: 640 }], issuedDaysAgo: 28, net: 15, status: "UNPAID" },
+  { n: 14, client: "solstice", items: [{ name: "Email sequence", description: "5-email onboarding flow", quantity: 1, unit_amount: 640 }], issuedDaysAgo: 28, net: 15, status: "UNPAID", promise: { payByInDays: -5, recordedDaysAgo: 11, quote: "Will pay the email sequence invoice by Friday, sorry for the delay." } },
   { n: 15, client: "vireo", items: [{ name: "Dashboard wireframes", quantity: 1, unit_amount: 900 }], issuedDaysAgo: 22, net: 15, status: "UNPAID" },
   { n: 16, client: "vireo", items: [{ name: "User interviews", description: "5 sessions + synthesis", quantity: 1, unit_amount: 500 }], issuedDaysAgo: 22, net: 15, status: "UNPAID" },
   { n: 17, client: "pinecrest", items: [{ name: "Drone footage", description: "2 properties", quantity: 1, unit_amount: 1100 }], issuedDaysAgo: 1, net: 14, status: "DRAFT" },
@@ -135,6 +137,7 @@ export function buildInvoices(now: Date): Invoice[] {
       reference: s.reference,
       note: s.note,
       paid_at: s.paidDaysAgo !== undefined ? isoDate(daysAgo(now, s.paidDaysAgo)) : undefined,
+      promise: s.promise ? { pay_by: isoDate(daysAgo(now, -s.promise.payByInDays)), amount: s.promise.amount, balance_at_record: round2(Math.max(0, total - paid)), recorded_at: daysAgo(now, s.promise.recordedDaysAgo).toISOString(), source: "client_reply" as const, quote: s.promise.quote } : undefined,
       reminders: (s.reminders ?? []).map((r) => ({ at: daysAgo(now, r.daysAgo).toISOString(), stage: r.stage })),
       chase_override: "default",
       links: {

@@ -13,6 +13,7 @@ import { audit, bump, disputeOverlayFor, getStore, overlayFor } from "../store";
 import { overdueDays, planCollections } from "./chase";
 import { buildEvidencePack } from "./evidence";
 import { payerProfiles, predictInvoice, unknownProfile } from "./payer-history";
+import { classifyReply, describePromise, promiseStatus } from "./promise";
 import { matchTransactions } from "./reconcile";
 
 async function evidenceFor(dispute_id: string) {
@@ -128,7 +129,7 @@ export const localTools = {
       const skipped = invoices
         .filter(isOpenInvoice)
         .filter((i) => !proposals.some((p) => p.invoice_id === i.id))
-        .map((i) => ({ invoice_number: i.invoice_number, overdue_days: overdueDays(i, now), reason: i.chase_override === "paused" ? "chasing paused" : i.reminders.length >= store.policy.reminders.maxReminders ? "max reminders reached" : overdueDays(i, now) < store.policy.reminders.friendlyAfterDays ? "not yet due for a reminder" : "already reminded at this stage / too soon since last reminder" }));
+        .map((i) => ({ invoice_number: i.invoice_number, overdue_days: overdueDays(i, now), reason: i.chase_override === "paused" ? "chasing paused" : promiseStatus(i, now, store.policy) === "open" && store.policy.promises.pauseChasing ? `promise to pay by ${i.promise!.pay_by} (promises.pauseChasing)` : i.reminders.length >= store.policy.reminders.maxReminders ? "max reminders reached" : overdueDays(i, now) < store.policy.reminders.friendlyAfterDays ? "not yet due for a reminder" : "already reminded at this stage / too soon since last reminder" }));
       return { now: now.toISOString(), policy: store.policy.reminders, proposals, skipped };
     },
   }),
@@ -187,6 +188,43 @@ export const localTools = {
       const ev = evaluateAction("submit_dispute_evidence", { dispute_id: d.id }, { policy: getStore().policy, invoices: await getInvoices(), disputes: await getDisputes() });
       audit({ actor: "agent", tool: "submit_dispute_evidence", action: `Submitted evidence pack for dispute ${d.id} (${money(d.amount, d.currency)}) via Disputes API ${result.channel}`, decision: ev.decision === "approve" ? "approved" : "allowed", reason: `${ev.decision === "approve" ? "You approved this. " : ""}${ev.reason} HTTP ${result.status}.`, rule: ev.rule, input: submission, output: result });
       return { dispute_id: d.id, channel: result.channel, http_status: result.status, evidence_type: submission.evidence_type, tracking: submission.tracking, submitted_at: overlay.evidence_submitted_at, links: result.links };
+    },
+  }),
+
+  classify_client_reply: tool({
+    description: "Read a client's reply (pasted email or message) and say what it is: a promise to pay (with the date and amount), a claim that payment was already sent, a dispute, or unknown. Read-only; then call record_promise for a promise, match_payments for a paid claim.",
+    inputSchema: z.object({ text: z.string().min(1).max(4000), invoice_id: z.string().optional().describe("Invoice id or number the reply is about, if known") }),
+    execute: async ({ text, invoice_id }) => {
+      const now = new Date();
+      const c = classifyReply(text, now);
+      const invoices = await getInvoices();
+      const inv = invoice_id ? invoices.find((i) => i.id === invoice_id || i.invoice_number === invoice_id) : undefined;
+      return { ...c, invoice_id: inv?.id, invoice_number: inv?.invoice_number, balance_due: inv?.due, next_step: c.kind === "promise" && c.pay_by ? "Call record_promise with this invoice, pay_by and amount." : c.kind === "promise" ? "The client promised but gave no date; ask for one or record a date the user confirms." : c.kind === "paid-claim" ? "Call match_payments to look for the payment; if nothing arrived, tell the user." : c.kind === "dispute" ? "Do not chase; tell the user what the client objects to." : "Show the reply to the user." };
+    },
+  }),
+
+  record_promise: tool({
+    description: "Record a client's promise to pay an invoice by a date (optionally a specific amount). Chasing pauses until then (promises.pauseChasing); if the money has not arrived by pay_by + graceDays the next reminder escalates one stage and cites the broken promise (promises.brokenEscalates). Use the invoice id or number.",
+    inputSchema: z.object({
+      invoice_id: z.string().describe("Invoice id or number"),
+      pay_by: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("yyyy-mm-dd"),
+      amount: z.number().positive().optional().describe("Promised amount; omit for the whole balance"),
+      source: z.enum(["client_reply", "user", "agent"]).default("client_reply"),
+      quote: z.string().max(500).optional().describe("The client's words"),
+    }),
+    execute: async ({ invoice_id, pay_by, amount, source, quote }) => {
+      const now = new Date();
+      const invoices = await getInvoices();
+      const inv = currentMode() === "mock" ? findMockInvoice(invoice_id) : invoices.find((i) => i.id === invoice_id || i.invoice_number === invoice_id);
+      if (!inv) return { error: `Invoice ${invoice_id} not found` };
+      if (!isOpenInvoice(inv)) return { error: `Invoice ${inv.invoice_number} is ${inv.status}; nothing to promise.` };
+      const promise = { pay_by, amount, balance_at_record: inv.due, recorded_at: now.toISOString(), source, quote };
+      if (currentMode() === "mock") inv.promise = promise;
+      overlayFor(inv.id).promise = promise;
+      bump();
+      const ev = evaluateAction("record_promise", { invoice_id: inv.id, pay_by, amount }, { policy: getStore().policy, invoices, disputes: await getDisputes(), now });
+      audit({ actor: "agent", tool: "record_promise", action: `${inv.client.business ?? inv.client.email} ${describePromise(promise, "open")} on ${inv.invoice_number}`, decision: ev.decision === "approve" ? "approved" : "allowed", reason: `${ev.decision === "approve" ? "You approved this. " : ""}${ev.reason}${quote ? ` Client: "${quote.slice(0, 160)}"` : ""}`, rule: ev.rule, input: { invoice_id: inv.id, pay_by, amount, source } });
+      return { invoice_id: inv.id, invoice_number: inv.invoice_number, client: inv.client.business ?? inv.client.email, balance_due: inv.due, promise, status: promiseStatus({ ...inv, promise }, now, getStore().policy), chasing: getStore().policy.promises.pauseChasing ? `paused until ${pay_by} (+${getStore().policy.promises.graceDays} grace)` : "unchanged" };
     },
   }),
 

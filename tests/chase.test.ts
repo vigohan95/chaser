@@ -34,7 +34,7 @@ describe("planCollections on the demo book", () => {
     expect(stage("INV-0002")).toBe("firm"); // 15 days, nothing sent
     expect(stage("INV-0003")).toBe("friendly"); // 5 days
     expect(stage("INV-0010")).toBe("final"); // 30 days, friendly+firm sent
-    expect(stage("INV-0006")).toBe("firm"); // partially paid, 10 days
+    expect(stage("INV-0006")).toBeUndefined(); // partially paid, 10 days, but the client promised the rest (promise open)
     expect(stage("INV-0013")).toBe("friendly");
     expect(stage("INV-0014")).toBe("firm");
   });

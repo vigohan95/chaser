@@ -56,6 +56,19 @@ export default function PolicyPanel({ policy, onSave }: { policy: Policy; onSave
         {r.adaptToHistory && <Num label="Shift for late-risk / reliable payers" value={r.historyShiftDays} suffix="days" onChange={(v) => setDraft({ ...draft, reminders: { ...r, historyShiftDays: v } })} />}
       </div>
       <div className="space-y-1.5">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted">Promises to pay</div>
+        <label className="flex items-center justify-between gap-2 text-sm">
+          <span className="text-muted">Pause chasing while a promise is open</span>
+          <input type="checkbox" checked={draft.promises.pauseChasing} onChange={(e) => setDraft({ ...draft, promises: { ...draft.promises, pauseChasing: e.target.checked } })} />
+        </label>
+        <Num label="Grace after the promised date" value={draft.promises.graceDays} suffix="days" onChange={(v) => setDraft({ ...draft, promises: { ...draft.promises, graceDays: v } })} />
+        <label className="flex items-center justify-between gap-2 text-sm">
+          <span className="text-muted">Broken promise escalates one stage</span>
+          <input type="checkbox" checked={draft.promises.brokenEscalates} onChange={(e) => setDraft({ ...draft, promises: { ...draft.promises, brokenEscalates: e.target.checked } })} />
+        </label>
+        <Num label="Ask me for promises further out than" value={draft.promises.maxDays} suffix="days" onChange={(v) => setDraft({ ...draft, promises: { ...draft.promises, maxDays: v } })} />
+      </div>
+      <div className="space-y-1.5">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted">Money boundaries</div>
         <Num label="Auto-accept disputes under" prefix="$" value={draft.disputes.autoAcceptUnder} onChange={(v) => setDraft({ ...draft, disputes: { ...draft.disputes, autoAcceptUnder: v } })} />
         <label className="flex items-center justify-between gap-2 text-sm">

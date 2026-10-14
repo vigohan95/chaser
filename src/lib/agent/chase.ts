@@ -2,6 +2,7 @@ import type { ChaseStage, Invoice, Transaction } from "../paypal/types";
 import { isOpenInvoice, money } from "../paypal/types";
 import type { Policy } from "../policy/schema";
 import { payerProfiles, predictInvoice, unknownProfile, type PayerProfile, type RiskBand } from "./payer-history";
+import { promiseStatus } from "./promise";
 
 export interface ChaseProposal {
   invoice_id: string;
@@ -25,6 +26,8 @@ export interface ChaseProposal {
   /** Why this stage now, in one line, citing the numbers; `rule` is the policy field it rests on. */
   why: string;
   rule: string;
+  /** Set when the stage was escalated because a recorded promise to pay was broken. */
+  broken_promise?: { pay_by: string; amount?: number };
 }
 
 const ORDER: ChaseStage[] = ["none", "friendly", "firm", "final"];
@@ -88,9 +91,19 @@ export function planCollections(invoices: Invoice[], policy: Policy, now: Date, 
     if (!isOpenInvoice(inv) || inv.chase_override === "paused") continue;
     const days = overdueDays(inv, now);
     const profile = profiles.get(inv.client.email.toLowerCase()) ?? unknownProfile(inv.client.email);
-    const stage = stageFor(days, policy, inv.chase_override, profile.band);
+    const pstatus = promiseStatus(inv, now, policy);
+    if (pstatus === "open" && policy.promises.pauseChasing) continue;
+    let stage = stageFor(days, policy, inv.chase_override, profile.band);
+    const sent = highestStageSent(inv);
+    let broken: ChaseProposal["broken_promise"];
+    if (pstatus === "broken" && policy.promises.brokenEscalates && inv.promise) {
+      // One stage above whatever was sent last, and never below what the calendar says.
+      const next = ORDER[Math.min(ORDER.indexOf(sent) + 1, ORDER.length - 1)];
+      if (ORDER.indexOf(next) > ORDER.indexOf(stage)) stage = next;
+      broken = { pay_by: inv.promise.pay_by, amount: inv.promise.amount };
+    }
     if (stage === "none") continue;
-    if (ORDER.indexOf(stage) <= ORDER.indexOf(highestStageSent(inv))) continue;
+    if (ORDER.indexOf(stage) <= ORDER.indexOf(sent)) continue;
     if (inv.reminders.length >= policy.reminders.maxReminders) continue;
     const last = inv.reminders.at(-1);
     if (last && (now.getTime() - new Date(last.at).getTime()) / 86_400_000 < policy.reminders.minDaysBetweenReminders) continue;
@@ -107,22 +120,33 @@ export function planCollections(invoices: Invoice[], policy: Policy, now: Date, 
       last_reminder_at: last?.at,
       pay_link: inv.links.pay,
       items: inv.items.map((i) => i.name).join(", "),
-      draft: draftReminder(inv, stage, days, merchant),
+      draft: draftReminder(inv, stage, days, merchant, broken),
       risk: predictInvoice(inv, profile, now).risk,
       predicted_pay_date: predictInvoice(inv, profile, now).predicted_pay_date,
       thresholds: thresholdsFor(policy, inv.chase_override, profile.band),
-      ...explainStage(stage, days, policy, inv, profile),
+      ...(broken
+        ? { why: `promise to pay${broken.amount !== undefined ? ` ${money(broken.amount, inv.currency)}` : ""} by ${broken.pay_by} was not kept (grace ${policy.promises.graceDays} day${policy.promises.graceDays === 1 ? "" : "s"}); escalated from ${sent} to ${stage} (promises.brokenEscalates)`, rule: "promises.brokenEscalates" }
+        : explainStage(stage, days, policy, inv, profile)),
+      broken_promise: broken,
     });
   }
   return out.sort((a, b) => b.overdue_days - a.overdue_days);
 }
 
 /** Template reminder used by the mock planner and offered to the LLM as a starting point. */
-export function draftReminder(inv: Invoice, stage: Exclude<ChaseStage, "none">, days: number, merchant: string): { subject: string; note: string } {
+export function draftReminder(inv: Invoice, stage: Exclude<ChaseStage, "none">, days: number, merchant: string, broken?: { pay_by: string; amount?: number }): { subject: string; note: string } {
   const first = inv.client.given_name;
   const amt = money(inv.due, inv.currency);
   const work = inv.items.map((i) => i.name).join(", ");
   const pay = inv.links.pay ? `\n\nPay securely here: ${inv.links.pay}` : "";
+  if (broken) {
+    const promised = broken.amount !== undefined ? money(broken.amount, inv.currency) : "payment";
+    const tone = stage === "final" ? `This is now a final notice: if the balance is not settled within 5 business days I will have to pause further work and apply the late fee in our agreement.` : `Could you let me know today when it will go out, or whether anything is blocking it?`;
+    return {
+      subject: `${stage === "final" ? "Final notice" : "Overdue"}: invoice ${inv.invoice_number} - ${amt}, promised by ${broken.pay_by}`,
+      note: `Hi ${first},\n\nYou let me know that ${promised} for invoice ${inv.invoice_number} (${work}) would be made by ${broken.pay_by}. It has not arrived, and the invoice is now ${days} days past its ${inv.due_date} due date with ${amt} outstanding. ${tone}${pay}\n\nRegards,\n${merchant}`,
+    };
+  }
   switch (stage) {
     case "friendly":
       return {

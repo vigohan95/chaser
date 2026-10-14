@@ -49,7 +49,21 @@ export interface Invoice {
   reminders: ReminderRecord[];
   /** Local overlay: per-invoice chasing override. */
   chase_override: ChaseOverride;
+  /** Local overlay: the client's promise to pay (chasing pauses until pay_by; a broken promise escalates). */
+  promise?: PromiseToPay;
   links: { view?: string; pay?: string; qr?: string };
+}
+
+export interface PromiseToPay {
+  pay_by: string; // yyyy-mm-dd
+  /** Amount promised; undefined = the whole balance. */
+  amount?: number;
+  /** Balance due when the promise was recorded, so "kept" can be derived without storing state transitions. */
+  balance_at_record: number;
+  recorded_at: string; // ISO
+  source: "client_reply" | "user" | "agent";
+  /** The client's words (or the user's), kept for the ledger and the hand-off pack. */
+  quote?: string;
 }
 
 export type ChaseOverride = "default" | "paused" | "gentle" | "aggressive";

@@ -270,6 +270,11 @@ export default function CommandCenter() {
                 <button className="btn" onClick={() => setPending(`Regarding ${selected.map((s) => s.invoice_number).join(", ")}: `)}>
                   Ask about selected
                 </button>
+                {selected.length === 1 && (
+                  <button className="btn" onClick={() => setPending(`${selected[0].client.business ?? selected[0].client.given_name} replied about ${selected[0].invoice_number}: "`)} title="Paste what the client said; the agent classifies it (promise to pay / already paid / objection) and records a promise with its date">
+                    Log client reply
+                  </button>
+                )}
               </>
             )}
             <nav className="ml-auto flex gap-1 rounded-md border border-border bg-panel p-0.5 text-sm">
