@@ -26,7 +26,9 @@ export interface AllocationRow {
   reasoning: string;
 }
 
-const KIND_LABEL: Record<string, string> = { exact: "exact", partial: "partial", combined: "split", "amount-only": "amount only", unmatched: "no match" };
+const KIND_LABEL: Record<string, string> = { exact: "exact", partial: "partial", combined: "split", fee_adjusted: "net of fee", overpayment: "overpayment", ambiguous: "ambiguous", "amount-only": "amount only", duplicate: "duplicate?", refund: "refund", unmatched: "no match" };
+/** Kinds the agent must not record from the grid: refunds use another tool, the rest need a human decision first. */
+const REVIEW_ONLY = new Set(["refund", "duplicate", "ambiguous", "amount-only", "unmatched"]);
 
 export function rowsFromResult(result: ReconcileResult, transactions: Transaction[], invoices: Invoice[]): AllocationRow[] {
   const byId = new Map(invoices.map((i) => [i.id, i]));
@@ -48,7 +50,7 @@ export function rowsFromResult(result: ReconcileResult, transactions: Transactio
 
 /** The message the agent receives; `parseAllocations` in the rule planner reads exactly this shape. */
 export function allocationMessage(rows: AllocationRow[]): string {
-  const lines = rows.filter((r) => r.invoice_number && r.amount > 0).map((r) => `${r.transaction_id} -> ${r.invoice_number} [${r.invoice_id}] $${r.amount.toFixed(2)}`);
+  const lines = rows.filter((r) => r.invoice_number && r.amount > 0 && !REVIEW_ONLY.has(r.kind)).map((r) => `${r.transaction_id} -> ${r.invoice_number} [${r.invoice_id}] $${r.amount.toFixed(2)}`);
   return `Record these payment allocations: ${lines.join("; ")}`;
 }
 

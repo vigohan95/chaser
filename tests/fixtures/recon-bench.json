@@ -1,0 +1,3936 @@
+{
+  "generated_at": "2026-10-14T03:36:43.062Z",
+  "now": "2026-10-13T12:00:00.000Z",
+  "invoices": [
+    {
+      "id": "INV2-BENCH-B-0001",
+      "invoice_number": "B-0001",
+      "status": "UNPAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0001",
+          "quantity": 1,
+          "unit_amount": 1200
+        }
+      ],
+      "currency": "USD",
+      "total": 1200,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1200,
+      "invoice_date": "2026-09-08",
+      "due_date": "2026-09-23",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0002",
+      "invoice_number": "B-0002",
+      "status": "UNPAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0002",
+          "quantity": 1,
+          "unit_amount": 450
+        }
+      ],
+      "currency": "USD",
+      "total": 450,
+      "paid": 0,
+      "refunded": 0,
+      "due": 450,
+      "invoice_date": "2026-09-16",
+      "due_date": "2026-10-01",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0003",
+      "invoice_number": "B-0003",
+      "status": "UNPAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0003",
+          "quantity": 1,
+          "unit_amount": 2750
+        }
+      ],
+      "currency": "USD",
+      "total": 2750,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2750,
+      "invoice_date": "2026-09-23",
+      "due_date": "2026-10-08",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0004",
+      "invoice_number": "B-0004",
+      "status": "PAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0004",
+          "quantity": 1,
+          "unit_amount": 800
+        }
+      ],
+      "currency": "USD",
+      "total": 800,
+      "paid": 800,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-08-19",
+      "due_date": "2026-09-03",
+      "paid_at": "2026-09-05",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0005",
+      "invoice_number": "B-0005",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0005",
+          "quantity": 1,
+          "unit_amount": 600
+        }
+      ],
+      "currency": "USD",
+      "total": 600,
+      "paid": 0,
+      "refunded": 0,
+      "due": 600,
+      "invoice_date": "2026-08-29",
+      "due_date": "2026-09-13",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0006",
+      "invoice_number": "B-0006",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0006",
+          "quantity": 1,
+          "unit_amount": 900
+        }
+      ],
+      "currency": "USD",
+      "total": 900,
+      "paid": 0,
+      "refunded": 0,
+      "due": 900,
+      "invoice_date": "2026-09-10",
+      "due_date": "2026-09-25",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0007",
+      "invoice_number": "B-0007",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0007",
+          "quantity": 1,
+          "unit_amount": 1500
+        }
+      ],
+      "currency": "USD",
+      "total": 1500,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1500,
+      "invoice_date": "2026-09-19",
+      "due_date": "2026-10-04",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0008",
+      "invoice_number": "B-0008",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0008",
+          "quantity": 1,
+          "unit_amount": 320
+        }
+      ],
+      "currency": "USD",
+      "total": 320,
+      "paid": 0,
+      "refunded": 0,
+      "due": 320,
+      "invoice_date": "2026-09-26",
+      "due_date": "2026-10-11",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0009",
+      "invoice_number": "B-0009",
+      "status": "UNPAID",
+      "client": {
+        "business": "Cedar Dental",
+        "given_name": "Ava",
+        "surname": "Cedar",
+        "email": "office@cedardental.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0009",
+          "quantity": 1,
+          "unit_amount": 750
+        }
+      ],
+      "currency": "USD",
+      "total": 750,
+      "paid": 0,
+      "refunded": 0,
+      "due": 750,
+      "invoice_date": "2026-09-03",
+      "due_date": "2026-09-18",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0010",
+      "invoice_number": "B-0010",
+      "status": "UNPAID",
+      "client": {
+        "business": "Cedar Dental",
+        "given_name": "Ava",
+        "surname": "Cedar",
+        "email": "office@cedardental.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0010",
+          "quantity": 1,
+          "unit_amount": 750
+        }
+      ],
+      "currency": "USD",
+      "total": 750,
+      "paid": 0,
+      "refunded": 0,
+      "due": 750,
+      "invoice_date": "2026-09-22",
+      "due_date": "2026-10-07",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0011",
+      "invoice_number": "B-0011",
+      "status": "UNPAID",
+      "client": {
+        "business": "Cedar Dental",
+        "given_name": "Ava",
+        "surname": "Cedar",
+        "email": "office@cedardental.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0011",
+          "quantity": 1,
+          "unit_amount": 1310.5
+        }
+      ],
+      "currency": "USD",
+      "total": 1310.5,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1310.5,
+      "invoice_date": "2026-09-25",
+      "due_date": "2026-10-10",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0012",
+      "invoice_number": "B-0012",
+      "status": "UNPAID",
+      "client": {
+        "business": "Dune Outfitters",
+        "given_name": "Leo",
+        "surname": "Dune",
+        "email": "finance@dune.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0012",
+          "quantity": 1,
+          "unit_amount": 1000
+        }
+      ],
+      "currency": "USD",
+      "total": 1000,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1000,
+      "invoice_date": "2026-09-18",
+      "due_date": "2026-10-03",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0013",
+      "invoice_number": "B-0013",
+      "status": "UNPAID",
+      "client": {
+        "business": "Dune Outfitters",
+        "given_name": "Leo",
+        "surname": "Dune",
+        "email": "finance@dune.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0013",
+          "quantity": 1,
+          "unit_amount": 2400
+        }
+      ],
+      "currency": "USD",
+      "total": 2400,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2400,
+      "invoice_date": "2026-09-24",
+      "due_date": "2026-10-09",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0014",
+      "invoice_number": "B-0014",
+      "status": "UNPAID",
+      "client": {
+        "business": "Dune Outfitters",
+        "given_name": "Leo",
+        "surname": "Dune",
+        "email": "finance@dune.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0014",
+          "quantity": 1,
+          "unit_amount": 199
+        }
+      ],
+      "currency": "USD",
+      "total": 199,
+      "paid": 0,
+      "refunded": 0,
+      "due": 199,
+      "invoice_date": "2026-09-27",
+      "due_date": "2026-10-12",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0015",
+      "invoice_number": "B-0015",
+      "status": "PARTIALLY_PAID",
+      "client": {
+        "business": "Elm Street Cafe",
+        "given_name": "Zoe",
+        "surname": "Elm",
+        "email": "zoe@elmcafe.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0015",
+          "quantity": 1,
+          "unit_amount": 1800
+        }
+      ],
+      "currency": "USD",
+      "total": 1800,
+      "paid": 800,
+      "refunded": 0,
+      "due": 1000,
+      "invoice_date": "2026-09-13",
+      "due_date": "2026-09-28",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0016",
+      "invoice_number": "B-0016",
+      "status": "PAID",
+      "client": {
+        "business": "Elm Street Cafe",
+        "given_name": "Zoe",
+        "surname": "Elm",
+        "email": "zoe@elmcafe.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0016",
+          "quantity": 1,
+          "unit_amount": 540
+        }
+      ],
+      "currency": "USD",
+      "total": 540,
+      "paid": 540,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-08-24",
+      "due_date": "2026-09-08",
+      "paid_at": "2026-09-10",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0017",
+      "invoice_number": "B-0017",
+      "status": "UNPAID",
+      "client": {
+        "business": "Elm Street Cafe",
+        "given_name": "Zoe",
+        "surname": "Elm",
+        "email": "zoe@elmcafe.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0017",
+          "quantity": 1,
+          "unit_amount": 260
+        }
+      ],
+      "currency": "USD",
+      "total": 260,
+      "paid": 0,
+      "refunded": 0,
+      "due": 260,
+      "invoice_date": "2026-09-28",
+      "due_date": "2026-10-13",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0018",
+      "invoice_number": "B-0018",
+      "status": "UNPAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0018",
+          "quantity": 1,
+          "unit_amount": 6400
+        }
+      ],
+      "currency": "USD",
+      "total": 6400,
+      "paid": 0,
+      "refunded": 0,
+      "due": 6400,
+      "invoice_date": "2026-09-20",
+      "due_date": "2026-10-05",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0019",
+      "invoice_number": "B-0019",
+      "status": "PAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0019",
+          "quantity": 1,
+          "unit_amount": 1250
+        }
+      ],
+      "currency": "USD",
+      "total": 1250,
+      "paid": 1250,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-07-30",
+      "due_date": "2026-08-14",
+      "paid_at": "2026-08-16",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0020",
+      "invoice_number": "B-0020",
+      "status": "PAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0020",
+          "quantity": 1,
+          "unit_amount": 980
+        }
+      ],
+      "currency": "USD",
+      "total": 980,
+      "paid": 980,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-08-14",
+      "due_date": "2026-08-29",
+      "paid_at": "2026-08-31",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0021",
+      "invoice_number": "B-0021",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0021",
+          "quantity": 1,
+          "unit_amount": 300
+        }
+      ],
+      "currency": "USD",
+      "total": 300,
+      "paid": 0,
+      "refunded": 0,
+      "due": 300,
+      "invoice_date": "2026-09-06",
+      "due_date": "2026-09-21",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0022",
+      "invoice_number": "B-0022",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0022",
+          "quantity": 1,
+          "unit_amount": 500
+        }
+      ],
+      "currency": "USD",
+      "total": 500,
+      "paid": 0,
+      "refunded": 0,
+      "due": 500,
+      "invoice_date": "2026-09-08",
+      "due_date": "2026-09-23",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0023",
+      "invoice_number": "B-0023",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0023",
+          "quantity": 1,
+          "unit_amount": 350
+        }
+      ],
+      "currency": "USD",
+      "total": 350,
+      "paid": 0,
+      "refunded": 0,
+      "due": 350,
+      "invoice_date": "2026-09-14",
+      "due_date": "2026-09-29",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0024",
+      "invoice_number": "B-0024",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0024",
+          "quantity": 1,
+          "unit_amount": 450
+        }
+      ],
+      "currency": "USD",
+      "total": 450,
+      "paid": 0,
+      "refunded": 0,
+      "due": 450,
+      "invoice_date": "2026-09-21",
+      "due_date": "2026-10-06",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0025",
+      "invoice_number": "B-0025",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0025",
+          "quantity": 1,
+          "unit_amount": 3000
+        }
+      ],
+      "currency": "USD",
+      "total": 3000,
+      "paid": 0,
+      "refunded": 0,
+      "due": 3000,
+      "invoice_date": "2026-09-25",
+      "due_date": "2026-10-10",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0026",
+      "invoice_number": "B-0026",
+      "status": "UNPAID",
+      "client": {
+        "business": "Kestrel GmbH",
+        "given_name": "Lena",
+        "surname": "Kestrel",
+        "email": "buchhaltung@kestrel.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0026",
+          "quantity": 1,
+          "unit_amount": 2000
+        }
+      ],
+      "currency": "EUR",
+      "total": 2000,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2000,
+      "invoice_date": "2026-09-17",
+      "due_date": "2026-10-02",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0027",
+      "invoice_number": "B-0027",
+      "status": "UNPAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0027",
+          "quantity": 1,
+          "unit_amount": 120
+        }
+      ],
+      "currency": "USD",
+      "total": 120,
+      "paid": 0,
+      "refunded": 0,
+      "due": 120,
+      "invoice_date": "2026-09-12",
+      "due_date": "2026-09-27",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0028",
+      "invoice_number": "B-0028",
+      "status": "UNPAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0028",
+          "quantity": 1,
+          "unit_amount": 85
+        }
+      ],
+      "currency": "USD",
+      "total": 85,
+      "paid": 0,
+      "refunded": 0,
+      "due": 85,
+      "invoice_date": "2026-09-19",
+      "due_date": "2026-10-04",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0029",
+      "invoice_number": "B-0029",
+      "status": "PAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0029",
+          "quantity": 1,
+          "unit_amount": 120
+        }
+      ],
+      "currency": "USD",
+      "total": 120,
+      "paid": 120,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-08-09",
+      "due_date": "2026-08-24",
+      "paid_at": "2026-08-26",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0030",
+      "invoice_number": "B-0030",
+      "status": "PAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0030",
+          "quantity": 1,
+          "unit_amount": 4200
+        }
+      ],
+      "currency": "USD",
+      "total": 4200,
+      "paid": 4200,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-07-20",
+      "due_date": "2026-08-04",
+      "paid_at": "2026-08-06",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0031",
+      "invoice_number": "B-0031",
+      "status": "PAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0031",
+          "quantity": 1,
+          "unit_amount": 1500
+        }
+      ],
+      "currency": "USD",
+      "total": 1500,
+      "paid": 1500,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-06-20",
+      "due_date": "2026-07-05",
+      "paid_at": "2026-07-07",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0032",
+      "invoice_number": "B-0032",
+      "status": "UNPAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0032",
+          "quantity": 1,
+          "unit_amount": 333
+        }
+      ],
+      "currency": "USD",
+      "total": 333,
+      "paid": 0,
+      "refunded": 0,
+      "due": 333,
+      "invoice_date": "2026-09-24",
+      "due_date": "2026-10-09",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0033",
+      "invoice_number": "B-0033",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0033",
+          "quantity": 1,
+          "unit_amount": 2222
+        }
+      ],
+      "currency": "USD",
+      "total": 2222,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2222,
+      "invoice_date": "2026-09-23",
+      "due_date": "2026-10-08",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0034",
+      "invoice_number": "B-0034",
+      "status": "UNPAID",
+      "client": {
+        "business": "Dune Outfitters",
+        "given_name": "Leo",
+        "surname": "Dune",
+        "email": "finance@dune.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0034",
+          "quantity": 1,
+          "unit_amount": 1775
+        }
+      ],
+      "currency": "USD",
+      "total": 1775,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1775,
+      "invoice_date": "2026-09-22",
+      "due_date": "2026-10-07",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0035",
+      "invoice_number": "B-0035",
+      "status": "UNPAID",
+      "client": {
+        "business": "Elm Street Cafe",
+        "given_name": "Zoe",
+        "surname": "Elm",
+        "email": "zoe@elmcafe.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0035",
+          "quantity": 1,
+          "unit_amount": 640
+        }
+      ],
+      "currency": "USD",
+      "total": 640,
+      "paid": 0,
+      "refunded": 0,
+      "due": 640,
+      "invoice_date": "2026-09-21",
+      "due_date": "2026-10-06",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0036",
+      "invoice_number": "B-0036",
+      "status": "UNPAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0036",
+          "quantity": 1,
+          "unit_amount": 410
+        }
+      ],
+      "currency": "USD",
+      "total": 410,
+      "paid": 0,
+      "refunded": 0,
+      "due": 410,
+      "invoice_date": "2026-09-20",
+      "due_date": "2026-10-05",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0037",
+      "invoice_number": "B-0037",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0037",
+          "quantity": 1,
+          "unit_amount": 905
+        }
+      ],
+      "currency": "USD",
+      "total": 905,
+      "paid": 0,
+      "refunded": 0,
+      "due": 905,
+      "invoice_date": "2026-09-19",
+      "due_date": "2026-10-04",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0038",
+      "invoice_number": "B-0038",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0038",
+          "quantity": 1,
+          "unit_amount": 5200
+        }
+      ],
+      "currency": "USD",
+      "total": 5200,
+      "paid": 0,
+      "refunded": 0,
+      "due": 5200,
+      "invoice_date": "2026-09-18",
+      "due_date": "2026-10-03",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0039",
+      "invoice_number": "B-0039",
+      "status": "UNPAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0039",
+          "quantity": 1,
+          "unit_amount": 61.5
+        }
+      ],
+      "currency": "USD",
+      "total": 61.5,
+      "paid": 0,
+      "refunded": 0,
+      "due": 61.5,
+      "invoice_date": "2026-09-17",
+      "due_date": "2026-10-02",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0040",
+      "invoice_number": "B-0040",
+      "status": "UNPAID",
+      "client": {
+        "business": "Cedar Dental",
+        "given_name": "Ava",
+        "surname": "Cedar",
+        "email": "office@cedardental.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0040",
+          "quantity": 1,
+          "unit_amount": 1998.99
+        }
+      ],
+      "currency": "USD",
+      "total": 1998.99,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1998.99,
+      "invoice_date": "2026-09-16",
+      "due_date": "2026-10-01",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0041",
+      "invoice_number": "B-0041",
+      "status": "UNPAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0041",
+          "quantity": 1,
+          "unit_amount": 870
+        }
+      ],
+      "currency": "USD",
+      "total": 870,
+      "paid": 0,
+      "refunded": 0,
+      "due": 870,
+      "invoice_date": "2026-09-15",
+      "due_date": "2026-09-30",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0042",
+      "invoice_number": "B-0042",
+      "status": "UNPAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0042",
+          "quantity": 1,
+          "unit_amount": 2300
+        }
+      ],
+      "currency": "USD",
+      "total": 2300,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2300,
+      "invoice_date": "2026-09-21",
+      "due_date": "2026-10-06",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0043",
+      "invoice_number": "B-0043",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0043",
+          "quantity": 1,
+          "unit_amount": 4000
+        }
+      ],
+      "currency": "USD",
+      "total": 4000,
+      "paid": 0,
+      "refunded": 0,
+      "due": 4000,
+      "invoice_date": "2026-09-20",
+      "due_date": "2026-10-05",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0044",
+      "invoice_number": "B-0044",
+      "status": "UNPAID",
+      "client": {
+        "business": "Elm Street Cafe",
+        "given_name": "Zoe",
+        "surname": "Elm",
+        "email": "zoe@elmcafe.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0044",
+          "quantity": 1,
+          "unit_amount": 150
+        }
+      ],
+      "currency": "USD",
+      "total": 150,
+      "paid": 0,
+      "refunded": 0,
+      "due": 150,
+      "invoice_date": "2026-09-19",
+      "due_date": "2026-10-04",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0045",
+      "invoice_number": "B-0045",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0045",
+          "quantity": 1,
+          "unit_amount": 999.99
+        }
+      ],
+      "currency": "USD",
+      "total": 999.99,
+      "paid": 0,
+      "refunded": 0,
+      "due": 999.99,
+      "invoice_date": "2026-09-18",
+      "due_date": "2026-10-03",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0046",
+      "invoice_number": "B-0046",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0046",
+          "quantity": 1,
+          "unit_amount": 12000
+        }
+      ],
+      "currency": "USD",
+      "total": 12000,
+      "paid": 0,
+      "refunded": 0,
+      "due": 12000,
+      "invoice_date": "2026-09-17",
+      "due_date": "2026-10-02",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0047",
+      "invoice_number": "B-0047",
+      "status": "UNPAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0047",
+          "quantity": 1,
+          "unit_amount": 700
+        }
+      ],
+      "currency": "USD",
+      "total": 700,
+      "paid": 0,
+      "refunded": 0,
+      "due": 700,
+      "invoice_date": "2026-09-14",
+      "due_date": "2026-09-29",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0048",
+      "invoice_number": "B-0048",
+      "status": "UNPAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0048",
+          "quantity": 1,
+          "unit_amount": 1100
+        }
+      ],
+      "currency": "USD",
+      "total": 1100,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1100,
+      "invoice_date": "2026-09-16",
+      "due_date": "2026-10-01",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0049",
+      "invoice_number": "B-0049",
+      "status": "UNPAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0049",
+          "quantity": 1,
+          "unit_amount": 40
+        }
+      ],
+      "currency": "USD",
+      "total": 40,
+      "paid": 0,
+      "refunded": 0,
+      "due": 40,
+      "invoice_date": "2026-08-29",
+      "due_date": "2026-09-13",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0050",
+      "invoice_number": "B-0050",
+      "status": "UNPAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0050",
+          "quantity": 1,
+          "unit_amount": 55
+        }
+      ],
+      "currency": "USD",
+      "total": 55,
+      "paid": 0,
+      "refunded": 0,
+      "due": 55,
+      "invoice_date": "2026-08-31",
+      "due_date": "2026-09-15",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0051",
+      "invoice_number": "B-0051",
+      "status": "UNPAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0051",
+          "quantity": 1,
+          "unit_amount": 77
+        }
+      ],
+      "currency": "USD",
+      "total": 77,
+      "paid": 0,
+      "refunded": 0,
+      "due": 77,
+      "invoice_date": "2026-09-02",
+      "due_date": "2026-09-17",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0052",
+      "invoice_number": "B-0052",
+      "status": "UNPAID",
+      "client": {
+        "business": "Cedar Dental",
+        "given_name": "Ava",
+        "surname": "Cedar",
+        "email": "office@cedardental.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0052",
+          "quantity": 1,
+          "unit_amount": 2100
+        }
+      ],
+      "currency": "USD",
+      "total": 2100,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2100,
+      "invoice_date": "2026-09-15",
+      "due_date": "2026-09-30",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0053",
+      "invoice_number": "B-0053",
+      "status": "UNPAID",
+      "client": {
+        "business": "Cedar Dental",
+        "given_name": "Ava",
+        "surname": "Cedar",
+        "email": "office@cedardental.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0053",
+          "quantity": 1,
+          "unit_amount": 3300
+        }
+      ],
+      "currency": "USD",
+      "total": 3300,
+      "paid": 0,
+      "refunded": 0,
+      "due": 3300,
+      "invoice_date": "2026-09-26",
+      "due_date": "2026-10-11",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0054",
+      "invoice_number": "B-0054",
+      "status": "UNPAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0054",
+          "quantity": 1,
+          "unit_amount": 150
+        }
+      ],
+      "currency": "USD",
+      "total": 150,
+      "paid": 0,
+      "refunded": 0,
+      "due": 150,
+      "invoice_date": "2026-09-07",
+      "due_date": "2026-09-22",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0055",
+      "invoice_number": "B-0055",
+      "status": "UNPAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0055",
+          "quantity": 1,
+          "unit_amount": 275
+        }
+      ],
+      "currency": "USD",
+      "total": 275,
+      "paid": 0,
+      "refunded": 0,
+      "due": 275,
+      "invoice_date": "2026-09-09",
+      "due_date": "2026-09-24",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0056",
+      "invoice_number": "B-0056",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0056",
+          "quantity": 1,
+          "unit_amount": 800
+        }
+      ],
+      "currency": "USD",
+      "total": 800,
+      "paid": 0,
+      "refunded": 0,
+      "due": 800,
+      "invoice_date": "2026-09-19",
+      "due_date": "2026-10-04",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0057",
+      "invoice_number": "B-0057",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0057",
+          "quantity": 1,
+          "unit_amount": 1200
+        }
+      ],
+      "currency": "USD",
+      "total": 1200,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1200,
+      "invoice_date": "2026-09-20",
+      "due_date": "2026-10-05",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0058",
+      "invoice_number": "B-0058",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0058",
+          "quantity": 1,
+          "unit_amount": 1600
+        }
+      ],
+      "currency": "USD",
+      "total": 1600,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1600,
+      "invoice_date": "2026-09-21",
+      "due_date": "2026-10-06",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0059",
+      "invoice_number": "B-0059",
+      "status": "UNPAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0059",
+          "quantity": 1,
+          "unit_amount": 2050
+        }
+      ],
+      "currency": "USD",
+      "total": 2050,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2050,
+      "invoice_date": "2026-09-25",
+      "due_date": "2026-10-10",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0060",
+      "invoice_number": "B-0060",
+      "status": "UNPAID",
+      "client": {
+        "business": "Alder & Co",
+        "given_name": "Mia",
+        "surname": "Alder",
+        "email": "ap@alder.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0060",
+          "quantity": 1,
+          "unit_amount": 1950
+        }
+      ],
+      "currency": "USD",
+      "total": 1950,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1950,
+      "invoice_date": "2026-09-27",
+      "due_date": "2026-10-12",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0061",
+      "invoice_number": "B-0061",
+      "status": "UNPAID",
+      "client": {
+        "business": "Dune Outfitters",
+        "given_name": "Leo",
+        "surname": "Dune",
+        "email": "finance@dune.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0061",
+          "quantity": 1,
+          "unit_amount": 5000
+        }
+      ],
+      "currency": "USD",
+      "total": 5000,
+      "paid": 0,
+      "refunded": 0,
+      "due": 5000,
+      "invoice_date": "2026-09-11",
+      "due_date": "2026-09-26",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0062",
+      "invoice_number": "B-0062",
+      "status": "UNPAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0062",
+          "quantity": 1,
+          "unit_amount": 3100
+        }
+      ],
+      "currency": "USD",
+      "total": 3100,
+      "paid": 0,
+      "refunded": 0,
+      "due": 3100,
+      "invoice_date": "2026-09-04",
+      "due_date": "2026-09-19",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0063",
+      "invoice_number": "B-0063",
+      "status": "UNPAID",
+      "client": {
+        "business": "Elm Street Cafe",
+        "given_name": "Zoe",
+        "surname": "Elm",
+        "email": "zoe@elmcafe.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0063",
+          "quantity": 1,
+          "unit_amount": 2200
+        }
+      ],
+      "currency": "USD",
+      "total": 2200,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2200,
+      "invoice_date": "2026-09-09",
+      "due_date": "2026-09-24",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0064",
+      "invoice_number": "B-0064",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0064",
+          "quantity": 1,
+          "unit_amount": 7600
+        }
+      ],
+      "currency": "USD",
+      "total": 7600,
+      "paid": 0,
+      "refunded": 0,
+      "due": 7600,
+      "invoice_date": "2026-08-26",
+      "due_date": "2026-09-10",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0065",
+      "invoice_number": "B-0065",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0065",
+          "quantity": 1,
+          "unit_amount": 1240
+        }
+      ],
+      "currency": "USD",
+      "total": 1240,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1240,
+      "invoice_date": "2026-09-01",
+      "due_date": "2026-09-16",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0066",
+      "invoice_number": "B-0066",
+      "status": "UNPAID",
+      "client": {
+        "business": "Iris Florals",
+        "given_name": "Kai",
+        "surname": "Iris",
+        "email": "kai@irisflorals.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0066",
+          "quantity": 1,
+          "unit_amount": 460
+        }
+      ],
+      "currency": "USD",
+      "total": 460,
+      "paid": 0,
+      "refunded": 0,
+      "due": 460,
+      "invoice_date": "2026-08-23",
+      "due_date": "2026-09-07",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0067",
+      "invoice_number": "B-0067",
+      "status": "UNPAID",
+      "client": {
+        "business": "Cedar Dental",
+        "given_name": "Ava",
+        "surname": "Cedar",
+        "email": "office@cedardental.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0067",
+          "quantity": 1,
+          "unit_amount": 890
+        }
+      ],
+      "currency": "USD",
+      "total": 890,
+      "paid": 0,
+      "refunded": 0,
+      "due": 890,
+      "invoice_date": "2026-08-30",
+      "due_date": "2026-09-14",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0068",
+      "invoice_number": "B-0068",
+      "status": "UNPAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0068",
+          "quantity": 1,
+          "unit_amount": 95
+        }
+      ],
+      "currency": "USD",
+      "total": 95,
+      "paid": 0,
+      "refunded": 0,
+      "due": 95,
+      "invoice_date": "2026-08-28",
+      "due_date": "2026-09-12",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0069",
+      "invoice_number": "B-0069",
+      "status": "UNPAID",
+      "client": {
+        "business": "Dune Outfitters",
+        "given_name": "Leo",
+        "surname": "Dune",
+        "email": "finance@dune.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0069",
+          "quantity": 1,
+          "unit_amount": 1480
+        }
+      ],
+      "currency": "USD",
+      "total": 1480,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1480,
+      "invoice_date": "2026-08-15",
+      "due_date": "2026-08-30",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0070",
+      "invoice_number": "B-0070",
+      "status": "UNPAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0070",
+          "quantity": 1,
+          "unit_amount": 525
+        }
+      ],
+      "currency": "USD",
+      "total": 525,
+      "paid": 0,
+      "refunded": 0,
+      "due": 525,
+      "invoice_date": "2026-08-18",
+      "due_date": "2026-09-02",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0071",
+      "invoice_number": "B-0071",
+      "status": "UNPAID",
+      "client": {
+        "business": "Fern Architects",
+        "given_name": "Ian",
+        "surname": "Fern",
+        "email": "accounts@fern.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0071",
+          "quantity": 1,
+          "unit_amount": 525
+        }
+      ],
+      "currency": "USD",
+      "total": 525,
+      "paid": 0,
+      "refunded": 0,
+      "due": 525,
+      "invoice_date": "2026-09-26",
+      "due_date": "2026-10-11",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0072",
+      "invoice_number": "B-0072",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0072",
+          "quantity": 1,
+          "unit_amount": 330
+        }
+      ],
+      "currency": "USD",
+      "total": 330,
+      "paid": 0,
+      "refunded": 0,
+      "due": 330,
+      "invoice_date": "2026-08-21",
+      "due_date": "2026-09-05",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0073",
+      "invoice_number": "B-0073",
+      "status": "UNPAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0073",
+          "quantity": 1,
+          "unit_amount": 330
+        }
+      ],
+      "currency": "USD",
+      "total": 330,
+      "paid": 0,
+      "refunded": 0,
+      "due": 330,
+      "invoice_date": "2026-08-22",
+      "due_date": "2026-09-06",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0074",
+      "invoice_number": "B-0074",
+      "status": "PAID",
+      "client": {
+        "business": "Juno Robotics",
+        "given_name": "Sam",
+        "surname": "Juno",
+        "email": "ap@junorobotics.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0074",
+          "quantity": 1,
+          "unit_amount": 640
+        }
+      ],
+      "currency": "USD",
+      "total": 640,
+      "paid": 640,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-09-05",
+      "due_date": "2026-09-20",
+      "paid_at": "2026-09-22",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0075",
+      "invoice_number": "B-0075",
+      "status": "PAID",
+      "client": {
+        "business": "Elm Street Cafe",
+        "given_name": "Zoe",
+        "surname": "Elm",
+        "email": "zoe@elmcafe.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0075",
+          "quantity": 1,
+          "unit_amount": 1175
+        }
+      ],
+      "currency": "USD",
+      "total": 1175,
+      "paid": 1175,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-09-16",
+      "due_date": "2026-10-01",
+      "paid_at": "2026-10-03",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0076",
+      "invoice_number": "B-0076",
+      "status": "PAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0076",
+          "quantity": 1,
+          "unit_amount": 2600
+        }
+      ],
+      "currency": "USD",
+      "total": 2600,
+      "paid": 2600,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-09-23",
+      "due_date": "2026-10-08",
+      "paid_at": "2026-10-10",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0077",
+      "invoice_number": "B-0077",
+      "status": "PAID",
+      "client": {
+        "business": "Hazel Legal LLP",
+        "given_name": "Ada",
+        "surname": "Hazel",
+        "email": "billing@hazellegal.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0077",
+          "quantity": 1,
+          "unit_amount": 410
+        }
+      ],
+      "currency": "USD",
+      "total": 410,
+      "paid": 410,
+      "refunded": 0,
+      "due": 0,
+      "invoice_date": "2026-09-13",
+      "due_date": "2026-09-28",
+      "paid_at": "2026-09-30",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0078",
+      "invoice_number": "B-0078",
+      "status": "UNPAID",
+      "client": {
+        "business": "Birch Media",
+        "given_name": "Noah",
+        "surname": "Birch",
+        "email": "noah@birchmedia.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0078",
+          "quantity": 1,
+          "unit_amount": 1337
+        }
+      ],
+      "currency": "USD",
+      "total": 1337,
+      "paid": 0,
+      "refunded": 0,
+      "due": 1337,
+      "invoice_date": "2026-09-18",
+      "due_date": "2026-10-03",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0079",
+      "invoice_number": "B-0079",
+      "status": "UNPAID",
+      "client": {
+        "business": "Grove Fitness",
+        "given_name": "Eli",
+        "surname": "Grove",
+        "email": "eli@grovefit.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0079",
+          "quantity": 1,
+          "unit_amount": 2468
+        }
+      ],
+      "currency": "USD",
+      "total": 2468,
+      "paid": 0,
+      "refunded": 0,
+      "due": 2468,
+      "invoice_date": "2026-09-17",
+      "due_date": "2026-10-02",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0080",
+      "invoice_number": "B-0080",
+      "status": "UNPAID",
+      "client": {
+        "business": "Dune Outfitters",
+        "given_name": "Leo",
+        "surname": "Dune",
+        "email": "finance@dune.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0080",
+          "quantity": 1,
+          "unit_amount": 3579
+        }
+      ],
+      "currency": "USD",
+      "total": 3579,
+      "paid": 0,
+      "refunded": 0,
+      "due": 3579,
+      "invoice_date": "2026-09-16",
+      "due_date": "2026-10-01",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    },
+    {
+      "id": "INV2-BENCH-B-0081",
+      "invoice_number": "B-0081",
+      "status": "UNPAID",
+      "client": {
+        "business": "Lark Studio",
+        "given_name": "Rae",
+        "surname": "Lark",
+        "email": "rae@larkstudio.example"
+      },
+      "items": [
+        {
+          "name": "Work item B-0081",
+          "quantity": 1,
+          "unit_amount": 5000
+        }
+      ],
+      "currency": "USD",
+      "total": 5000,
+      "paid": 0,
+      "refunded": 0,
+      "due": 5000,
+      "invoice_date": "2026-08-11",
+      "due_date": "2026-08-26",
+      "reminders": [],
+      "chase_override": "default",
+      "links": {}
+    }
+  ],
+  "transactions": [
+    {
+      "id": "8DLBWDWXLMSXW1NKL",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1200,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@alder.example",
+      "payer_name": "Mia Alder",
+      "memo": "B-0001"
+    },
+    {
+      "id": "T0F2MA3NF01YFAZ8R",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 450,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@alder.example",
+      "payer_name": "Mia Alder",
+      "memo": "Payment for inv 0002, thanks"
+    },
+    {
+      "id": "SMUZQHJX07LFS1JHJ",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 900,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "noah@birchmedia.example",
+      "payer_name": "Noah Birch",
+      "memo": "Invoice #B-0006"
+    },
+    {
+      "id": "58RLMYP698HWT8TWF",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1310.5,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "office@cedardental.example",
+      "payer_name": "Ava Cedar",
+      "memo": "inv0011 settled"
+    },
+    {
+      "id": "4V4HQ54FAF2D4HCPQ",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2400,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "finance@dune.example",
+      "payer_name": "Leo Dune",
+      "memo": "INVOICE B-0013 - dune outfitters"
+    },
+    {
+      "id": "70Z8Z2B65UBEPS7UD",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 260,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm",
+      "memo": "Inv. 0017 coffee cart graphics"
+    },
+    {
+      "id": "6MC529SXQ1ED0H8MN",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 3000,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "billing@hazellegal.example",
+      "payer_name": "Ada Hazel",
+      "memo": "Inv #0025"
+    },
+    {
+      "id": "189SZQX6Z2TCKQ10K",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 750,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "office@cedardental.example",
+      "payer_name": "Ava Cedar",
+      "memo": "inv-0009 (older one)"
+    },
+    {
+      "id": "E3AZY9NZLBUVS52PY",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2750,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "mia.alder@gmail.example",
+      "payer_name": "Mia Alder",
+      "memo": "B-0003 paying from personal account"
+    },
+    {
+      "id": "DQPW1Y3Q5JXC3EMGR",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1500,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "parent@birchholdings.example",
+      "payer_name": "Birch Holdings",
+      "memo": "invoice B-0007 on behalf of Birch Media"
+    },
+    {
+      "id": "CB2TL5JZQRGBW5NR0",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 450,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "eli.grove@icloud.example",
+      "payer_name": "Eli Grove",
+      "memo": "INV 0024"
+    },
+    {
+      "id": "7GH49238VS5LFY7AX",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2000,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "accounts@fern.example",
+      "payer_name": "Ian Fern",
+      "memo": "B-0018 first instalment"
+    },
+    {
+      "id": "8V476VNZAKL3N7NHN",
+      "date": "2026-10-12T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2000,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "accounts@fern.example",
+      "payer_name": "Ian Fern",
+      "memo": "B-0018 second instalment"
+    },
+    {
+      "id": "R8RS3678RCHLBG38V",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 500,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm",
+      "memo": "inv 0015 - part"
+    },
+    {
+      "id": "23E76H8H4B2105GPU",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 100,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "noah@birchmedia.example",
+      "payer_name": "Noah Birch",
+      "memo": "Invoice B-0005 deposit"
+    },
+    {
+      "id": "BW50KCKUM4X85JXYB",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 333,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@alder.example",
+      "payer_name": "Mia Alder"
+    },
+    {
+      "id": "C9S3054KLXURCTC52",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2222,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "noah@birchmedia.example",
+      "payer_name": "Noah Birch",
+      "memo": "thanks"
+    },
+    {
+      "id": "DND6XG7A1Q9S12TW9",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1775,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "finance@dune.example",
+      "payer_name": "Leo Dune",
+      "memo": "thanks"
+    },
+    {
+      "id": "6H230TQ3WPAPQ9QB8",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 640,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm"
+    },
+    {
+      "id": "7WP6X4TUVY76D052Z",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 410,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "accounts@fern.example",
+      "payer_name": "Ian Fern",
+      "memo": "thanks"
+    },
+    {
+      "id": "89A9UXC3ARN7L9L96",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 905,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "eli@grovefit.example",
+      "payer_name": "Eli Grove",
+      "memo": "thanks"
+    },
+    {
+      "id": "9NXUR8XURJKQ9J10D",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 5200,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "billing@hazellegal.example",
+      "payer_name": "Ada Hazel"
+    },
+    {
+      "id": "2HL9UKY34H45Y7EFW",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 61.5,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "kai@irisflorals.example",
+      "payer_name": "Kai Iris",
+      "memo": "thanks"
+    },
+    {
+      "id": "3W7CRWHCKA1N5GV63",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1998.99,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "office@cedardental.example",
+      "payer_name": "Ava Cedar",
+      "memo": "thanks"
+    },
+    {
+      "id": "7QR21U905JPW34BCX",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 870,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno"
+    },
+    {
+      "id": "PS7LTWXQZQ5LB6163",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 970.7,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "finance@dune.example",
+      "payer_name": "Leo Dune"
+    },
+    {
+      "id": "LMCV2F6Z4BWKSDQHY",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2219.24,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@alder.example",
+      "payer_name": "Mia Alder",
+      "memo": "net of fees"
+    },
+    {
+      "id": "M0ZYZS9QK4B2ZN585",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 3871.6,
+      "fee": 128.4,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "noah@birchmedia.example",
+      "payer_name": "Noah Birch"
+    },
+    {
+      "id": "8D2V2T4FAKEMEFWB8",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 145.35,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm"
+    },
+    {
+      "id": "9SPEZ4PQRCV43QB2Z",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 964.6,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "eli@grovefit.example",
+      "payer_name": "Eli Grove"
+    },
+    {
+      "id": "Q5UPQPGFEHL3JXGDA",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 11651.7,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "billing@hazellegal.example",
+      "payer_name": "Ada Hazel"
+    },
+    {
+      "id": "TQREZ2Z6F0D2R6PGK",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1800,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno",
+      "memo": "two invoices"
+    },
+    {
+      "id": "QKWPQMSFLM416DUTW",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 172,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "kai@irisflorals.example",
+      "payer_name": "Kai Iris"
+    },
+    {
+      "id": "RYHSMYB61E1JVNTJM",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 5400,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "office@cedardental.example",
+      "payer_name": "Ava Cedar",
+      "memo": "Oct + Nov"
+    },
+    {
+      "id": "WBLPQZ6XSDN3AF05Q",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 425,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "accounts@fern.example",
+      "payer_name": "Ian Fern"
+    },
+    {
+      "id": "XQ78MA9676KLHQFCX",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 3600,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "billing@hazellegal.example",
+      "payer_name": "Ada Hazel"
+    },
+    {
+      "id": "U3CHWVJFWTAKEX4PS",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 4000,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@alder.example",
+      "payer_name": "Mia Alder",
+      "memo": "both"
+    },
+    {
+      "id": "KEF0H07LBJT894PLD",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1250,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "finance@dune.example",
+      "payer_name": "Leo Dune"
+    },
+    {
+      "id": "LT23EBABABQ9GDNT4",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 600,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno",
+      "memo": "part payment"
+    },
+    {
+      "id": "M6P6B4VLR4MS5N3JB",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1100,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm"
+    },
+    {
+      "id": "N1AR8FEB6D29CDJRJ",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 3800,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "noah@birchmedia.example",
+      "payer_name": "Noah Birch",
+      "memo": "half now"
+    },
+    {
+      "id": "5EXUP8H2M6ZA1NZG9",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 240,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "eli@grovefit.example",
+      "payer_name": "Eli Grove"
+    },
+    {
+      "id": "6TJXLK2B2ZWT8XEPG",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 400,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "kai@irisflorals.example",
+      "payer_name": "Kai Iris"
+    },
+    {
+      "id": "105LFGH05A70KQX0P",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 900,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "office@cedardental.example",
+      "payer_name": "Ava Cedar",
+      "memo": "rounded up"
+    },
+    {
+      "id": "YVAB61A9UXYZ0FLVJ",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 100,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno"
+    },
+    {
+      "id": "Z8XE3CD09QV0PQ12R",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1500,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "finance@dune.example",
+      "payer_name": "Leo Dune"
+    },
+    {
+      "id": "QMYKQFWMLXUPN50MS",
+      "date": "2026-10-10T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 750,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "office@cedardental.example",
+      "payer_name": "Ava Cedar"
+    },
+    {
+      "id": "T8TUZCMCXS3Q7EBAX",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 800,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "eli@grovefit.example",
+      "payer_name": "Eli Grove"
+    },
+    {
+      "id": "SV6R2KJMGHN7J5WKQ",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 525,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "accounts@fern.example",
+      "payer_name": "Ian Fern"
+    },
+    {
+      "id": "V01GTGRCBCX83YR8V",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 330,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "billing@hazellegal.example",
+      "payer_name": "Ada Hazel",
+      "memo": "retainer"
+    },
+    {
+      "id": "989JR0HQ3LKA3JKWR",
+      "date": "2026-10-10T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 640,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno",
+      "invoice_id": "INV2-BENCH-B-0074"
+    },
+    {
+      "id": "2VAD6ZYXEFAMJ70BL",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 640,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno"
+    },
+    {
+      "id": "Q7EKCFG94PCDGFJD8",
+      "date": "2026-10-12T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1175,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm",
+      "invoice_id": "INV2-BENCH-B-0075"
+    },
+    {
+      "id": "10PA96V6FND4BYKLD",
+      "date": "2026-10-12T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1175,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm",
+      "memo": "oops sent twice"
+    },
+    {
+      "id": "1NZS30ZU721CFAREH",
+      "date": "2026-10-09T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2600,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "eli@grovefit.example",
+      "payer_name": "Eli Grove",
+      "invoice_id": "INV2-BENCH-B-0076"
+    },
+    {
+      "id": "0M2RCVAF0VYMNP4DN",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2600,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "eli@grovefit.example",
+      "payer_name": "Eli Grove"
+    },
+    {
+      "id": "WPYRCRGVJ5SHJ9A5E",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 410,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "billing@hazellegal.example",
+      "payer_name": "Ada Hazel",
+      "invoice_id": "INV2-BENCH-B-0077"
+    },
+    {
+      "id": "78DA9J9N5WX6Z0REP",
+      "date": "2026-10-13T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 410,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "billing@hazellegal.example",
+      "payer_name": "Ada Hazel"
+    },
+    {
+      "id": "URA90HUR8DG7NF696",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "REFUND",
+      "amount": -4200,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno",
+      "memo": "Refund B-0030 project cancelled"
+    },
+    {
+      "id": "TCP63Q90TL16ZQRJZ",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "REFUND",
+      "amount": -980,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "accounts@fern.example",
+      "payer_name": "Ian Fern",
+      "memo": "refund"
+    },
+    {
+      "id": "SZ236D69UT4PSFAB8",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "REFUND",
+      "amount": -540,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "zoe@elmcafe.example",
+      "payer_name": "Zoe Elm"
+    },
+    {
+      "id": "Z4DN32PGZUK838XC9",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "REFUND",
+      "amount": -800,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@alder.example",
+      "payer_name": "Mia Alder",
+      "memo": "inv 0004 goodwill"
+    },
+    {
+      "id": "YRS36RLRJ1NREZY52",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "REFUND",
+      "amount": -120,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "kai@irisflorals.example",
+      "payer_name": "Kai Iris",
+      "memo": "Refund for B-0029"
+    },
+    {
+      "id": "JRA32MN9CZ498D4DJ",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1337,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "someone@unknown.example",
+      "payer_name": "Unknown Payer"
+    },
+    {
+      "id": "HCPJ5A30X67SK4P6T",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2468,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "pay@processor.example",
+      "payer_name": "Payment Processor",
+      "memo": "transfer"
+    },
+    {
+      "id": "GZ2F8H09GDARCV8FL",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 3579,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "leo@personal.example",
+      "payer_name": "Leo"
+    },
+    {
+      "id": "R6T4TS5QD8T4X8783",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2000,
+      "fee": 0,
+      "currency": "EUR",
+      "status": "S",
+      "payer_email": "buchhaltung@kestrel.example",
+      "payer_name": "Lena Kestrel",
+      "memo": "Rechnung"
+    },
+    {
+      "id": "QT61WFLFYFW38ZSHW",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2000,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "buchhaltung@kestrel.example",
+      "payer_name": "Lena Kestrel",
+      "memo": "October"
+    },
+    {
+      "id": "PEKYZN1QHNZL1QBAP",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 2000,
+      "fee": 0,
+      "currency": "GBP",
+      "status": "S",
+      "payer_email": "buchhaltung@kestrel.example",
+      "payer_name": "Lena Kestrel"
+    },
+    {
+      "id": "XQZNP276MQRQTE3L7",
+      "date": "2026-10-10T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1700,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "rae@larkstudio.example",
+      "payer_name": "Rae Lark"
+    },
+    {
+      "id": "YKL7LVSF2HN7GPJTY",
+      "date": "2026-10-12T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 1700,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "rae@larkstudio.example",
+      "payer_name": "Rae Lark"
+    },
+    {
+      "id": "2HC9E1UVYPYTUF29Y",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 25,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "fan@random.example",
+      "payer_name": "A Fan",
+      "memo": "coffee on me"
+    },
+    {
+      "id": "14RQH89LHW1SM63J7",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 49.99,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "buyer@marketplace.example",
+      "payer_name": "Marketplace Buyer",
+      "memo": "Order 8812"
+    },
+    {
+      "id": "0R4MLX6VJ3L9YXNB0",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 777.77,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "nobody@nowhere.example",
+      "payer_name": "Nobody"
+    },
+    {
+      "id": "ZCHJP4M43APSRN7L9",
+      "date": "2026-10-11T12:00:00.000Z",
+      "type": "PAYMENT",
+      "amount": 12345.67,
+      "fee": 0,
+      "currency": "USD",
+      "status": "S",
+      "payer_email": "ap@junorobotics.example",
+      "payer_name": "Sam Juno",
+      "memo": "advance for Q1"
+    }
+  ],
+  "labels": [
+    {
+      "transaction_id": "8DLBWDWXLMSXW1NKL",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0001",
+          "amount": 1200
+        }
+      ]
+    },
+    {
+      "transaction_id": "T0F2MA3NF01YFAZ8R",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0002",
+          "amount": 450
+        }
+      ]
+    },
+    {
+      "transaction_id": "SMUZQHJX07LFS1JHJ",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0006",
+          "amount": 900
+        }
+      ]
+    },
+    {
+      "transaction_id": "58RLMYP698HWT8TWF",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0011",
+          "amount": 1310.5
+        }
+      ]
+    },
+    {
+      "transaction_id": "4V4HQ54FAF2D4HCPQ",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0013",
+          "amount": 2400
+        }
+      ]
+    },
+    {
+      "transaction_id": "70Z8Z2B65UBEPS7UD",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0017",
+          "amount": 260
+        }
+      ]
+    },
+    {
+      "transaction_id": "6MC529SXQ1ED0H8MN",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0025",
+          "amount": 3000
+        }
+      ]
+    },
+    {
+      "transaction_id": "189SZQX6Z2TCKQ10K",
+      "scenario": "memo_exact",
+      "rule": "memo_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0009",
+          "amount": 750
+        }
+      ],
+      "note": "memo disambiguates two equal balances"
+    },
+    {
+      "transaction_id": "E3AZY9NZLBUVS52PY",
+      "scenario": "memo_other_payer",
+      "rule": "memo_other_payer",
+      "allocations": [
+        {
+          "invoice_number": "B-0003",
+          "amount": 2750
+        }
+      ]
+    },
+    {
+      "transaction_id": "DQPW1Y3Q5JXC3EMGR",
+      "scenario": "memo_other_payer",
+      "rule": "memo_other_payer",
+      "allocations": [
+        {
+          "invoice_number": "B-0007",
+          "amount": 1500
+        }
+      ]
+    },
+    {
+      "transaction_id": "CB2TL5JZQRGBW5NR0",
+      "scenario": "memo_other_payer",
+      "rule": "memo_other_payer",
+      "allocations": [
+        {
+          "invoice_number": "B-0024",
+          "amount": 450
+        }
+      ]
+    },
+    {
+      "transaction_id": "7GH49238VS5LFY7AX",
+      "scenario": "partial_memo",
+      "rule": "partial_memo",
+      "allocations": [
+        {
+          "invoice_number": "B-0018",
+          "amount": 2000
+        }
+      ]
+    },
+    {
+      "transaction_id": "8V476VNZAKL3N7NHN",
+      "scenario": "partial_memo",
+      "rule": "partial_memo",
+      "allocations": [
+        {
+          "invoice_number": "B-0018",
+          "amount": 2000
+        }
+      ],
+      "note": "same amount within 3 days, but the memo names the invoice"
+    },
+    {
+      "transaction_id": "R8RS3678RCHLBG38V",
+      "scenario": "partial_memo",
+      "rule": "partial_memo",
+      "allocations": [
+        {
+          "invoice_number": "B-0015",
+          "amount": 500
+        }
+      ]
+    },
+    {
+      "transaction_id": "23E76H8H4B2105GPU",
+      "scenario": "partial_memo",
+      "rule": "partial_memo",
+      "allocations": [
+        {
+          "invoice_number": "B-0005",
+          "amount": 100
+        }
+      ]
+    },
+    {
+      "transaction_id": "BW50KCKUM4X85JXYB",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0032",
+          "amount": 333
+        }
+      ]
+    },
+    {
+      "transaction_id": "C9S3054KLXURCTC52",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0033",
+          "amount": 2222
+        }
+      ]
+    },
+    {
+      "transaction_id": "DND6XG7A1Q9S12TW9",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0034",
+          "amount": 1775
+        }
+      ]
+    },
+    {
+      "transaction_id": "6H230TQ3WPAPQ9QB8",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0035",
+          "amount": 640
+        }
+      ]
+    },
+    {
+      "transaction_id": "7WP6X4TUVY76D052Z",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0036",
+          "amount": 410
+        }
+      ]
+    },
+    {
+      "transaction_id": "89A9UXC3ARN7L9L96",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0037",
+          "amount": 905
+        }
+      ]
+    },
+    {
+      "transaction_id": "9NXUR8XURJKQ9J10D",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0038",
+          "amount": 5200
+        }
+      ]
+    },
+    {
+      "transaction_id": "2HL9UKY34H45Y7EFW",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0039",
+          "amount": 61.5
+        }
+      ]
+    },
+    {
+      "transaction_id": "3W7CRWHCKA1N5GV63",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0040",
+          "amount": 1998.99
+        }
+      ]
+    },
+    {
+      "transaction_id": "7QR21U905JPW34BCX",
+      "scenario": "payer_exact",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0041",
+          "amount": 870
+        }
+      ]
+    },
+    {
+      "transaction_id": "PS7LTWXQZQ5LB6163",
+      "scenario": "fee_adjusted",
+      "rule": "fee_adjusted",
+      "allocations": [
+        {
+          "invoice_number": "B-0012",
+          "amount": 970.7
+        }
+      ]
+    },
+    {
+      "transaction_id": "LMCV2F6Z4BWKSDQHY",
+      "scenario": "fee_adjusted",
+      "rule": "fee_adjusted",
+      "allocations": [
+        {
+          "invoice_number": "B-0042",
+          "amount": 2219.24
+        }
+      ]
+    },
+    {
+      "transaction_id": "M0ZYZS9QK4B2ZN585",
+      "scenario": "fee_adjusted",
+      "rule": "fee_adjusted",
+      "allocations": [
+        {
+          "invoice_number": "B-0043",
+          "amount": 3871.6
+        }
+      ]
+    },
+    {
+      "transaction_id": "8D2V2T4FAKEMEFWB8",
+      "scenario": "fee_adjusted",
+      "rule": "fee_adjusted",
+      "allocations": [
+        {
+          "invoice_number": "B-0044",
+          "amount": 145.35
+        }
+      ]
+    },
+    {
+      "transaction_id": "9SPEZ4PQRCV43QB2Z",
+      "scenario": "fee_adjusted",
+      "rule": "fee_adjusted",
+      "allocations": [
+        {
+          "invoice_number": "B-0045",
+          "amount": 964.6
+        }
+      ]
+    },
+    {
+      "transaction_id": "Q5UPQPGFEHL3JXGDA",
+      "scenario": "fee_adjusted",
+      "rule": "fee_adjusted",
+      "allocations": [
+        {
+          "invoice_number": "B-0046",
+          "amount": 11651.7
+        }
+      ]
+    },
+    {
+      "transaction_id": "TQREZ2Z6F0D2R6PGK",
+      "scenario": "combined",
+      "rule": "combined",
+      "allocations": [
+        {
+          "invoice_number": "B-0047",
+          "amount": 700
+        },
+        {
+          "invoice_number": "B-0048",
+          "amount": 1100
+        }
+      ]
+    },
+    {
+      "transaction_id": "QKWPQMSFLM416DUTW",
+      "scenario": "combined",
+      "rule": "combined",
+      "allocations": [
+        {
+          "invoice_number": "B-0049",
+          "amount": 40
+        },
+        {
+          "invoice_number": "B-0050",
+          "amount": 55
+        },
+        {
+          "invoice_number": "B-0051",
+          "amount": 77
+        }
+      ]
+    },
+    {
+      "transaction_id": "RYHSMYB61E1JVNTJM",
+      "scenario": "combined",
+      "rule": "combined",
+      "allocations": [
+        {
+          "invoice_number": "B-0052",
+          "amount": 2100
+        },
+        {
+          "invoice_number": "B-0053",
+          "amount": 3300
+        }
+      ]
+    },
+    {
+      "transaction_id": "WBLPQZ6XSDN3AF05Q",
+      "scenario": "combined",
+      "rule": "combined",
+      "allocations": [
+        {
+          "invoice_number": "B-0054",
+          "amount": 150
+        },
+        {
+          "invoice_number": "B-0055",
+          "amount": 275
+        }
+      ]
+    },
+    {
+      "transaction_id": "XQ78MA9676KLHQFCX",
+      "scenario": "combined",
+      "rule": "combined",
+      "allocations": [
+        {
+          "invoice_number": "B-0056",
+          "amount": 800
+        },
+        {
+          "invoice_number": "B-0057",
+          "amount": 1200
+        },
+        {
+          "invoice_number": "B-0058",
+          "amount": 1600
+        }
+      ]
+    },
+    {
+      "transaction_id": "U3CHWVJFWTAKEX4PS",
+      "scenario": "combined",
+      "rule": "combined",
+      "allocations": [
+        {
+          "invoice_number": "B-0059",
+          "amount": 2050
+        },
+        {
+          "invoice_number": "B-0060",
+          "amount": 1950
+        }
+      ]
+    },
+    {
+      "transaction_id": "KEF0H07LBJT894PLD",
+      "scenario": "partial",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0061",
+          "amount": 1250
+        }
+      ]
+    },
+    {
+      "transaction_id": "LT23EBABABQ9GDNT4",
+      "scenario": "partial",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0062",
+          "amount": 600
+        }
+      ]
+    },
+    {
+      "transaction_id": "M6P6B4VLR4MS5N3JB",
+      "scenario": "partial",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0063",
+          "amount": 1100
+        }
+      ]
+    },
+    {
+      "transaction_id": "N1AR8FEB6D29CDJRJ",
+      "scenario": "partial",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0064",
+          "amount": 3800
+        }
+      ]
+    },
+    {
+      "transaction_id": "5EXUP8H2M6ZA1NZG9",
+      "scenario": "partial",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0065",
+          "amount": 240
+        }
+      ]
+    },
+    {
+      "transaction_id": "6TJXLK2B2ZWT8XEPG",
+      "scenario": "partial",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0066",
+          "amount": 400
+        }
+      ]
+    },
+    {
+      "transaction_id": "105LFGH05A70KQX0P",
+      "scenario": "overpayment",
+      "rule": "overpayment",
+      "allocations": [
+        {
+          "invoice_number": "B-0067",
+          "amount": 890
+        }
+      ]
+    },
+    {
+      "transaction_id": "YVAB61A9UXYZ0FLVJ",
+      "scenario": "overpayment",
+      "rule": "overpayment",
+      "allocations": [
+        {
+          "invoice_number": "B-0068",
+          "amount": 95
+        }
+      ]
+    },
+    {
+      "transaction_id": "Z8XE3CD09QV0PQ12R",
+      "scenario": "overpayment",
+      "rule": "overpayment",
+      "allocations": [
+        {
+          "invoice_number": "B-0069",
+          "amount": 1480
+        }
+      ]
+    },
+    {
+      "transaction_id": "QMYKQFWMLXUPN50MS",
+      "scenario": "ambiguous",
+      "rule": "ambiguous",
+      "allocations": [
+        {
+          "invoice_number": "B-0009",
+          "amount": 750
+        }
+      ],
+      "note": "B-0009 and B-0010 both $750; oldest shown for review"
+    },
+    {
+      "transaction_id": "T8TUZCMCXS3Q7EBAX",
+      "scenario": "ambiguous",
+      "rule": "ambiguous",
+      "allocations": [
+        {
+          "invoice_number": "B-0021",
+          "amount": 300
+        },
+        {
+          "invoice_number": "B-0022",
+          "amount": 500
+        }
+      ],
+      "note": "300+500 or 350+450"
+    },
+    {
+      "transaction_id": "SV6R2KJMGHN7J5WKQ",
+      "scenario": "ambiguous",
+      "rule": "ambiguous",
+      "allocations": [
+        {
+          "invoice_number": "B-0070",
+          "amount": 525
+        }
+      ]
+    },
+    {
+      "transaction_id": "V01GTGRCBCX83YR8V",
+      "scenario": "ambiguous",
+      "rule": "ambiguous",
+      "allocations": [
+        {
+          "invoice_number": "B-0072",
+          "amount": 330
+        }
+      ]
+    },
+    {
+      "transaction_id": "2VAD6ZYXEFAMJ70BL",
+      "scenario": "duplicate",
+      "rule": "duplicate",
+      "allocations": [],
+      "note": "repeat of the 640 applied to B-0057 two days earlier"
+    },
+    {
+      "transaction_id": "10PA96V6FND4BYKLD",
+      "scenario": "duplicate",
+      "rule": "duplicate",
+      "allocations": []
+    },
+    {
+      "transaction_id": "0M2RCVAF0VYMNP4DN",
+      "scenario": "duplicate",
+      "rule": "duplicate",
+      "allocations": []
+    },
+    {
+      "transaction_id": "78DA9J9N5WX6Z0REP",
+      "scenario": "duplicate",
+      "rule": "duplicate",
+      "allocations": []
+    },
+    {
+      "transaction_id": "URA90HUR8DG7NF696",
+      "scenario": "refund",
+      "rule": "refund",
+      "allocations": [
+        {
+          "invoice_number": "B-0030",
+          "amount": 4200
+        }
+      ]
+    },
+    {
+      "transaction_id": "TCP63Q90TL16ZQRJZ",
+      "scenario": "refund",
+      "rule": "refund",
+      "allocations": [
+        {
+          "invoice_number": "B-0020",
+          "amount": 980
+        }
+      ],
+      "note": "two paid invoices; amount equals one of them"
+    },
+    {
+      "transaction_id": "SZ236D69UT4PSFAB8",
+      "scenario": "refund",
+      "rule": "refund",
+      "allocations": [
+        {
+          "invoice_number": "B-0016",
+          "amount": 540
+        }
+      ],
+      "note": "paid-in-full invoices for Elm: B-0015 (540) and the duplicate scenario's B-0058 (1150); amount picks B-0015"
+    },
+    {
+      "transaction_id": "Z4DN32PGZUK838XC9",
+      "scenario": "refund",
+      "rule": "refund",
+      "allocations": [
+        {
+          "invoice_number": "B-0004",
+          "amount": 800
+        }
+      ]
+    },
+    {
+      "transaction_id": "YRS36RLRJ1NREZY52",
+      "scenario": "refund",
+      "rule": "refund",
+      "allocations": [
+        {
+          "invoice_number": "B-0029",
+          "amount": 120
+        }
+      ]
+    },
+    {
+      "transaction_id": "JRA32MN9CZ498D4DJ",
+      "scenario": "amount_only",
+      "rule": "amount_only",
+      "allocations": [
+        {
+          "invoice_number": "B-0078",
+          "amount": 1337
+        }
+      ]
+    },
+    {
+      "transaction_id": "HCPJ5A30X67SK4P6T",
+      "scenario": "amount_only",
+      "rule": "amount_only",
+      "allocations": [
+        {
+          "invoice_number": "B-0079",
+          "amount": 2468
+        }
+      ]
+    },
+    {
+      "transaction_id": "GZ2F8H09GDARCV8FL",
+      "scenario": "amount_only",
+      "rule": "amount_only",
+      "allocations": [
+        {
+          "invoice_number": "B-0080",
+          "amount": 3579
+        }
+      ]
+    },
+    {
+      "transaction_id": "R6T4TS5QD8T4X8783",
+      "scenario": "currency_mismatch",
+      "rule": "payer_exact",
+      "allocations": [
+        {
+          "invoice_number": "B-0026",
+          "amount": 2000
+        }
+      ],
+      "note": "same currency: a normal exact match"
+    },
+    {
+      "transaction_id": "QT61WFLFYFW38ZSHW",
+      "scenario": "currency_mismatch",
+      "rule": "unmatched",
+      "allocations": [],
+      "note": "USD payment equals the EUR 2,000 balance; not the same invoice"
+    },
+    {
+      "transaction_id": "PEKYZN1QHNZL1QBAP",
+      "scenario": "currency_mismatch",
+      "rule": "unmatched",
+      "allocations": []
+    },
+    {
+      "transaction_id": "XQZNP276MQRQTE3L7",
+      "scenario": "repeat_instalment",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0081",
+          "amount": 1700
+        }
+      ]
+    },
+    {
+      "transaction_id": "YKL7LVSF2HN7GPJTY",
+      "scenario": "repeat_instalment",
+      "rule": "partial",
+      "allocations": [
+        {
+          "invoice_number": "B-0081",
+          "amount": 1700
+        }
+      ],
+      "note": "truth: a second instalment; the matcher reports a possible duplicate for review (known limit)"
+    },
+    {
+      "transaction_id": "2HC9E1UVYPYTUF29Y",
+      "scenario": "off_invoice",
+      "rule": "unmatched",
+      "allocations": []
+    },
+    {
+      "transaction_id": "14RQH89LHW1SM63J7",
+      "scenario": "off_invoice",
+      "rule": "unmatched",
+      "allocations": []
+    },
+    {
+      "transaction_id": "0R4MLX6VJ3L9YXNB0",
+      "scenario": "off_invoice",
+      "rule": "unmatched",
+      "allocations": []
+    },
+    {
+      "transaction_id": "ZCHJP4M43APSRN7L9",
+      "scenario": "off_invoice",
+      "rule": "unmatched",
+      "allocations": [],
+      "note": "known payer, no open invoice or combination fits"
+    }
+  ]
+}

@@ -11,7 +11,9 @@
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
     "sandbox:check": "tsx scripts/sandbox-check.ts",
-    "sandbox:shots": "python scripts/sandbox_shots.py"
+    "sandbox:shots": "python scripts/sandbox_shots.py",
+    "bench:recon": "tsx scripts/bench-recon.ts",
+    "bench:recon:gen": "tsx scripts/gen-recon-bench.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.93",

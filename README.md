@@ -24,6 +24,30 @@ PayPal already sends invoices and automatic reminders (`setup_invoice_auto_remin
 - **Dispute responses through the API the toolkit does not expose.** [`src/lib/paypal/rest.ts`](src/lib/paypal/rest.ts) calls `provide-evidence` (multipart) and `send-message` with the evidence pack assembled from invoice line items, payment record, shipment tracking and reminder history; the call path is in [`docs/sandbox-evidence/disputes-api-probe.json`](docs/sandbox-evidence/disputes-api-probe.json).
 - **A policy you edit as data, and a ledger that names the field.** [`src/lib/policy/engine.ts`](src/lib/policy/engine.ts) (schema: [`src/lib/policy/schema.ts`](src/lib/policy/schema.ts)) answers allow / ask / deny for every tool call and cites the policy field; every row of [`docs/sandbox-evidence/2026-10-10-collections-audit.json`](docs/sandbox-evidence/2026-10-10-collections-audit.json) carries its `rule`.
 
+## Reconciliation accuracy (published benchmark)
+
+Nobody else in this niche publishes how well their matcher works, so here are the numbers. [`tests/fixtures/recon-bench.json`](tests/fixtures/recon-bench.json) is a labelled set of **71 transactions over 81 invoices** (exact, partial, split across 2-3 invoices, net of a PayPal fee, memo typos, invoices paid from a different email, overpayments, duplicates, refunds, ambiguous equal balances, wrong currency, off-invoice payments); `npm run bench:recon` scores [`src/lib/agent/reconcile.ts`](src/lib/agent/reconcile.ts) against it and writes [`docs/RECONCILIATION-BENCHMARK.md`](docs/RECONCILIATION-BENCHMARK.md). A transaction counts as correct only when the rule *and* the full allocation set (invoice numbers and amounts) match the label. [`tests/recon-bench.test.ts`](tests/recon-bench.test.ts) pins these numbers.
+
+**70 / 71 correct (98.6%); 53 / 53 of the matches the agent would record without asking are correct (100% auto-record precision).** Ambiguous, amount-only and duplicate matches are `review` actions: shown in the match review, never recorded by the agent.
+
+| Rule | What it matches | Labelled | Precision | Recall |
+|---|---|---:|---:|---:|
+| `memo_exact` | invoice number in the memo (any punctuation, `inv 0013`, `Inv. #13`), amount = balance | 8 | 100% | 100% |
+| `memo_other_payer` | memo names the invoice, paid from an email that is not the client's | 3 | 100% | 100% |
+| `partial_memo` | memo names the invoice, amount under the balance (instalments stack) | 4 | 100% | 100% |
+| `payer_exact` | same payer, one open invoice with that balance | 11 | 100% | 100% |
+| `fee_adjusted` | same payer, amount = balance net of a PayPal fee (2.9% + $0.30 .. 3.49% + $0.49, or the transaction's own fee); the fee gap is reported | 6 | 100% | 100% |
+| `combined` | same payer, amount = sum of 2-4 open invoices | 6 | 100% | 100% |
+| `overpayment` | same payer, at most $20 / 2% over one balance (rounded up); closes it, remainder stays unapplied | 3 | 100% | 100% |
+| `partial` | same payer, less than the oldest open balance | 8 | 100% | 87.5% |
+| `duplicate` (review) | same payer, same amount, same currency within 3 days of an applied payment, nothing open for it | 4 | 80% | 100% |
+| `ambiguous` (review) | two invoices or two combinations fit equally | 4 | 100% | 100% |
+| `amount_only` (review) | unknown payer, exactly one open invoice with that balance | 3 | 100% | 100% |
+| `refund` | an unlinked refund matched to the payer's paid invoice (`record_refund_for_invoice`) | 5 | 100% | 100% |
+| unmatched | wrong currency, off-invoice payments, known payer with nothing that fits | 6 | 100% | 100% |
+
+The one miss is deliberate and documented: a second equal instalment with no memo within three days is held as a possible duplicate for review rather than recorded, which is the safer error.
+
 ## 60-second tour (no keys needed)
 
 ```bash

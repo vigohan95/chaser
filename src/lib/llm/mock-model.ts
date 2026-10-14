@@ -291,14 +291,15 @@ function reconcilePlaybook(turn: Turn): Action {
   if (!matched) return { type: "calls", calls: [{ toolName: "match_payments", input: {} }] };
   const matches = arr(matched.output.matches);
   const unmatched = arr(matched.output.unmatched);
-  const confident = matches.filter((m) => n(m.confidence) >= 0.6);
-  const low = matches.filter((m) => n(m.confidence) < 0.6);
-  const recorded = has(turn, "record_payment_for_invoice");
+  const confident = matches.filter((m) => n(m.confidence) >= 0.6 && s(m.action) !== "review");
+  const low = matches.filter((m) => n(m.confidence) < 0.6 || s(m.action) === "review");
+  const recorded = [...has(turn, "record_payment_for_invoice"), ...has(turn, "record_refund_for_invoice")];
   if (confident.length && recorded.length === 0) {
     const calls: Action["type"] extends "calls" ? never : Array<{ toolName: string; input: J }> = [];
     for (const m of confident) {
       for (const a of arr(m.allocations)) {
-        calls.push({ toolName: "record_payment_for_invoice", input: { invoice_id: s(a.invoice_id), method: "PAYPAL", payment_id: s(m.transaction_id), amount: { currency_code: "USD", value: n(a.amount).toFixed(2) }, note: `Matched ${s(m.kind)} payment from ${s(m.payer_email)} (${Math.round(n(m.confidence) * 100)}% confidence): ${s(m.reasoning)}` } });
+        if (s(m.action) === "record_refund") calls.push({ toolName: "record_refund_for_invoice", input: { invoice_id: s(a.invoice_id), method: "PAYPAL", refund_id: s(m.transaction_id), amount: { currency_code: "USD", value: n(a.amount).toFixed(2) }, note: `Matched refund ${s(m.transaction_id)} (${Math.round(n(m.confidence) * 100)}% confidence): ${s(m.reasoning)}` } });
+        else calls.push({ toolName: "record_payment_for_invoice", input: { invoice_id: s(a.invoice_id), method: "PAYPAL", payment_id: s(m.transaction_id), amount: { currency_code: "USD", value: n(a.amount).toFixed(2) }, note: `Matched ${s(m.rule, s(m.kind))} payment from ${s(m.payer_email)} (${Math.round(n(m.confidence) * 100)}% confidence): ${s(m.reasoning)}` } });
       }
     }
     return { type: "calls", calls };
@@ -311,7 +312,7 @@ function reconcilePlaybook(turn: Turn): Action {
     });
     return `- ${usd(n(m.amount))} from ${s(m.payer_email)} -> ${allocs.join("; ")}. ${s(m.reasoning)}`;
   });
-  const lowLines = low.map((m) => `- ${usd(n(m.amount))} from ${s(m.payer_email ?? "unknown")}: ${s(m.reasoning)} (${Math.round(n(m.confidence) * 100)}% - left for you)`);
+  const lowLines = low.map((m) => `- ${usd(n(m.amount))} from ${s(m.payer_email ?? "unknown")} [${s(m.rule, s(m.kind))}]: ${s(m.reasoning)} (${Math.round(n(m.confidence) * 100)}% - left for you)`);
   const unLines = unmatched.map((u) => `- ${usd(n(u.amount))} from ${s(u.payer_email, "unknown")}${u.memo ? ` "${s(u.memo)}"` : ""}: ${s(u.reason)}`);
   return { type: "text", text: `Reconciliation: ${confident.length} payment(s) matched and recorded.\n${lines.join("\n")}${lowLines.length ? `\n\nNeeds your eyes:\n${lowLines.join("\n")}` : ""}${unLines.length ? `\n\nUnmatched:\n${unLines.join("\n")}` : ""}` };
 }
