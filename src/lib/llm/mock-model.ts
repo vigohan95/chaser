@@ -258,7 +258,11 @@ function collectionsPlaybook(turn: Turn): Action {
   }
   const lines = proposals.map((p) => {
     const r = sent.find((x) => s(x.input.invoice_id) === s(p.invoice_id));
-    const history = s(p.rule) === "reminders.adaptToHistory" ? ` (${s(p.risk)} payer: ${s(p.why)})` : s(p.channel) === "resend" ? " (never opened on PayPal: re-delivered with an address check instead of a chase)" : s(p.rule) === "promises.brokenEscalates" ? ` (${s(p.why)})` : "";
+    const notes = [
+      s(p.rule) === "reminders.adaptToHistory" ? `${s(p.risk)} payer: ${s(p.why).split("; PayPal shows")[0]}` : s(p.rule) === "promises.brokenEscalates" ? s(p.why) : "",
+      s(p.channel) === "resend" ? "never opened on PayPal: re-delivered with an address check instead of a chase" : "",
+    ].filter(Boolean);
+    const history = notes.length ? ` (${notes.join("; ")})` : "";
     return `- ${s(p.invoice_number)} ${s(p.client)} - ${s(p.stage)} reminder, ${usd(n(p.amount_due))}, ${n(p.overdue_days)} days overdue${history}: ${outcomeLine(r, (o) => `sent to ${s(o.reminder_sent_to, s(p.email))}`)}`;
   });
   const okCount = sent.filter((r) => !r.denied && !r.error).length;

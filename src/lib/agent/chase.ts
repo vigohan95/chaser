@@ -32,6 +32,8 @@ export interface ChaseProposal {
   viewed?: boolean;
   /** reminder: the normal stage reminder; resend: the invoice was never opened, so re-deliver it and check the address. */
   channel: "reminder" | "resend";
+  /** The policy field behind a non-default channel (reminders.unviewedStrategy); `rule` stays the field behind the stage. */
+  channel_rule?: string;
 }
 
 /** Should this reminder be a re-delivery instead of a chase? Only when PayPal says the invoice was never opened. */
@@ -138,11 +140,12 @@ export function planCollections(invoices: Invoice[], policy: Policy, now: Date, 
       ...(broken
         ? { why: `promise to pay${broken.amount !== undefined ? ` ${money(broken.amount, inv.currency)}` : ""} by ${broken.pay_by} was not kept (grace ${policy.promises.graceDays} day${policy.promises.graceDays === 1 ? "" : "s"}); escalated from ${sent} to ${stage} (promises.brokenEscalates)`, rule: "promises.brokenEscalates" }
         : resend
-          ? { why: `${explainStage(stage, days, policy, inv, profile).why}; PayPal shows the invoice was never opened (viewed_by_recipient = false) after ${days} days, so it is re-delivered with an address check instead of a ${stage} reminder (reminders.unviewedStrategy = resend)`, rule: "reminders.unviewedStrategy" }
+          ? { why: `${explainStage(stage, days, policy, inv, profile).why}; PayPal shows the invoice was never opened (viewed_by_recipient = false) after ${days} days, so it is re-delivered with an address check instead of a ${stage} reminder (reminders.unviewedStrategy = resend)`, rule: explainStage(stage, days, policy, inv, profile).rule }
           : explainStage(stage, days, policy, inv, profile)),
       broken_promise: broken,
       viewed: inv.viewed_by_recipient,
       channel: resend ? "resend" : "reminder",
+      channel_rule: resend ? "reminders.unviewedStrategy" : undefined,
     });
   }
   return out.sort((a, b) => b.overdue_days - a.overdue_days);

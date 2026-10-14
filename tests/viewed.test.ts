@@ -48,17 +48,17 @@ describe("unviewedResend + planCollections", () => {
     expect(unviewedResend({ viewed_by_recipient: false }, 30, parsePolicy({ reminders: { viewedAware: false } }))).toBe(false);
 
     const plan = planCollections(invoices, DEFAULT_POLICY, now, "Han", transactions);
-    const p2 = plan.find((p) => p.invoice_number === "INV-0002")!; // 20 days overdue, never opened, late-risk payer -> final by calendar
-    expect(p2).toMatchObject({ channel: "resend", viewed: false, stage: "final", rule: "reminders.unviewedStrategy" });
-    expect(p2.why).toContain("never opened (viewed_by_recipient = false) after 20 days");
-    expect(p2.draft.subject).toBe("Final notice (resent): invoice INV-0002 ($2,400.00) - did this reach you?");
+    const p2 = plan.find((p) => p.invoice_number === "INV-0002")!; // 15 days overdue, never opened, late-risk payer -> firm by calendar (firm at 7, final at 18)
+    expect(p2).toMatchObject({ channel: "resend", viewed: false, stage: "firm", rule: "reminders.adaptToHistory", channel_rule: "reminders.unviewedStrategy" });
+    expect(p2.why).toContain("never opened (viewed_by_recipient = false) after 15 days");
+    expect(p2.draft.subject).toBe("Resending: 15 days overdue: invoice INV-0002 ($2,400.00) - did this reach you?");
     expect(p2.draft.note).toContain("if hello@bluebird.example is not the best address");
     const p1 = plan.find((p) => p.invoice_number === "INV-0001")!; // opened
     expect(p1).toMatchObject({ channel: "reminder", viewed: true });
     expect(p1.draft.note).toContain("PayPal shows the invoice has been opened");
     const ignore = planCollections(invoices, parsePolicy({ reminders: { unviewedStrategy: "ignore" } }), now, "Han", transactions).find((p) => p.invoice_number === "INV-0002")!;
-    expect(ignore).toMatchObject({ channel: "reminder", stage: "final" });
-    expect(ignore.draft.subject).toContain("Final notice");
+    expect(ignore).toMatchObject({ channel: "reminder", stage: "firm", channel_rule: undefined });
+    expect(ignore.draft.subject).toContain("Overdue: invoice INV-0002");
   });
   it("a broken promise outranks the viewed signal; the resend subject still carries the stage words", () => {
     const inv = { ...byNo("INV-0014"), viewed_by_recipient: false }; // broken promise, 13 days overdue
@@ -75,7 +75,7 @@ describe("agent loop", () => {
     const r = await runOnce("Run collections", { unattended: true });
     const inv2 = getStore().mock.invoices.find((i) => i.invoice_number === "INV-0002")!;
     expect(inv2.reminders.at(-1)?.subject).toContain("did this reach you?");
-    expect(inv2.reminders.at(-1)?.stage).toBe("final");
+    expect(inv2.reminders.at(-1)?.stage).toBe("firm");
     expect(getStore().audit.find((a) => a.rule === "reminders.unviewedStrategy")?.action).toContain("INV-0002 Bluebird Studio: never opened on PayPal, re-delivered");
     expect(r.text).toContain("never opened on PayPal");
   });
