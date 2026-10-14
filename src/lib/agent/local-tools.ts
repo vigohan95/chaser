@@ -122,9 +122,9 @@ export const localTools = {
       const invoices = invoice_ids?.length ? all.filter((i) => invoice_ids.includes(i.id) || invoice_ids.includes(i.invoice_number)) : all;
       const proposals = full.filter((p) => invoices.some((i) => i.id === p.invoice_id));
       for (const p of proposals) {
-        if (p.rule !== "reminders.adaptToHistory") continue;
-        // The cadence decision itself goes in the ledger, with the numbers it rests on.
-        audit({ actor: "policy", tool: "propose_collections", action: `${p.invoice_number} ${p.client}: ${p.stage} stage brought ${p.risk === "late-risk" ? "forward" : "back"} by payer history`, decision: "allowed", reason: p.why, rule: p.rule });
+        // The cadence / channel decisions themselves go in the ledger, with the numbers they rest on.
+        if (p.rule === "reminders.adaptToHistory") audit({ actor: "policy", tool: "propose_collections", action: `${p.invoice_number} ${p.client}: ${p.stage} stage brought ${p.risk === "late-risk" ? "forward" : "back"} by payer history`, decision: "allowed", reason: p.why, rule: p.rule });
+        if (p.channel === "resend") audit({ actor: "policy", tool: "propose_collections", action: `${p.invoice_number} ${p.client}: never opened on PayPal, re-delivered with an address check instead of a ${p.stage} reminder`, decision: "allowed", reason: p.why, rule: "reminders.unviewedStrategy" });
       }
       const skipped = invoices
         .filter(isOpenInvoice)

@@ -3,7 +3,7 @@
 import { AgGridReact } from "ag-grid-react";
 import type { CellValueChangedEvent, ColDef, ICellRendererParams, RowClassRules, SelectionChangedEvent } from "ag-grid-community";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { explainStage, overdueDays, stageFor, highestStageSent, thresholdsFor } from "@/lib/agent/chase";
+import { explainStage, overdueDays, stageFor, highestStageSent, thresholdsFor, unviewedResend } from "@/lib/agent/chase";
 import { payerProfiles, predictInvoice, unknownProfile, type RiskBand } from "@/lib/agent/payer-history";
 import { describePromise, promiseStatus, type PromiseStatus } from "@/lib/agent/promise";
 import type { Invoice, Transaction } from "@/lib/paypal/types";
@@ -139,6 +139,9 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
         } else if (i.reminders.length >= policy.reminders.maxReminders) {
           nextStage = "max reminders";
           why = `${i.reminders.length} reminders sent (reminders.maxReminders = ${policy.reminders.maxReminders}).`;
+        } else if (order.indexOf(due) > order.indexOf(sent) && unviewedResend(i, od, policy)) {
+          nextStage = `resend (never opened)`;
+          why = `${explainStage(due, od, policy, i, profile).why}; PayPal shows the invoice was never opened after ${od} days, so it is re-delivered with an address check instead of a ${due} reminder (reminders.unviewedStrategy = resend).`;
         } else if (order.indexOf(due) > order.indexOf(sent)) {
           nextStage = `${due} now`;
           why = explainStage(due, od, policy, i, profile).why;
@@ -170,6 +173,13 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
       { field: "risk", headerName: "Risk", width: 95, cellRenderer: RiskBadge, headerTooltip: "Payer band from PayPal payment history: reliable / typical / late-risk / unknown" },
       { field: "nextStage", headerName: "Next action", width: 170, tooltipField: "why", headerTooltip: "What the agent will do next and why (hover a cell)" },
       { field: "promiseState", headerName: "Promise", width: 150, cellRenderer: PromiseCell, headerTooltip: "A recorded promise to pay: chasing waits for it; a broken one escalates" },
+      {
+        field: "viewed_by_recipient",
+        headerName: "Viewed",
+        width: 110,
+        headerTooltip: "PayPal's detail.viewed_by_recipient: did the client open the invoice? Never-opened invoices are re-delivered instead of chased harder.",
+        cellRenderer: (p: ICellRendererParams<Row, boolean | undefined>) => (!p.data || !isOpenInvoice(p.data) || p.value === undefined ? <span className="text-muted">-</span> : p.value ? <span className="text-ok">opened</span> : <span className="text-warn">not opened</span>),
+      },
       { headerName: "Reminders", width: 120, valueGetter: (p) => p.data?.reminders.length ?? 0, valueFormatter: (p) => (p.value ? `${p.value} (last ${shortDate(p.data?.reminders.at(-1)?.at)})` : "none") },
       {
         field: "chase_override",

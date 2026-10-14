@@ -45,6 +45,8 @@ export interface Invoice {
   note?: string;
   /** When the invoice was (last) paid, from PayPal's payments.transactions[].payment_date; feeds the payer history. */
   paid_at?: string; // ISO or yyyy-mm-dd
+  /** Invoicing v2 `detail.viewed_by_recipient`: PayPal's record that the recipient opened the invoice. Undefined when the source does not carry it. */
+  viewed_by_recipient?: boolean;
   /** Local overlay: reminders the agent sent (PayPal does not expose a count). */
   reminders: ReminderRecord[];
   /** Local overlay: per-invoice chasing override. */

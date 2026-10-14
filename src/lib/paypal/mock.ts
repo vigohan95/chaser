@@ -55,6 +55,7 @@ function toPayPalInvoice(inv: Invoice) {
       reference: inv.reference,
       note: inv.note,
       payment_term: { term_type: "DUE_ON_DATE_SPECIFIED", due_date: inv.due_date },
+      viewed_by_recipient: inv.viewed_by_recipient,
     },
     primary_recipients: [
       {

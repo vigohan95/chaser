@@ -121,6 +121,7 @@ export function mapInvoice(pp: unknown): Invoice {
     reference: s(detail.reference) || undefined,
     note: s(detail.note) || undefined,
     paid_at: paidAt || undefined,
+    viewed_by_recipient: typeof detail.viewed_by_recipient === "boolean" ? detail.viewed_by_recipient : undefined,
     reminders: [],
     chase_override: "default",
     links: { view, pay },

@@ -54,6 +54,15 @@ export default function PolicyPanel({ policy, onSave }: { policy: Policy; onSave
           <input type="checkbox" checked={r.adaptToHistory} onChange={(e) => setDraft({ ...draft, reminders: { ...r, adaptToHistory: e.target.checked } })} />
         </label>
         {r.adaptToHistory && <Num label="Shift for late-risk / reliable payers" value={r.historyShiftDays} suffix="days" onChange={(v) => setDraft({ ...draft, reminders: { ...r, historyShiftDays: v } })} />}
+        <label className="flex items-center justify-between gap-2 text-sm" title="PayPal's viewed_by_recipient: an invoice the client never opened is re-delivered with an address check instead of a firmer reminder.">
+          <span className="text-muted">Re-deliver never-opened invoices</span>
+          <select value={r.viewedAware ? r.unviewedStrategy : "off"} onChange={(e) => setDraft({ ...draft, reminders: { ...r, viewedAware: e.target.value !== "off", unviewedStrategy: e.target.value === "off" ? r.unviewedStrategy : (e.target.value as Policy["reminders"]["unviewedStrategy"]) } })} className="rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent">
+            <option value="resend">resend + check address</option>
+            <option value="ignore">chase as normal</option>
+            <option value="off">ignore the viewed signal</option>
+          </select>
+        </label>
+        {r.viewedAware && r.unviewedStrategy === "resend" && <Num label="... once overdue by" value={r.unviewedAfterDays} suffix="days" onChange={(v) => setDraft({ ...draft, reminders: { ...r, unviewedAfterDays: v } })} />}
       </div>
       <div className="space-y-1.5">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted">Promises to pay</div>

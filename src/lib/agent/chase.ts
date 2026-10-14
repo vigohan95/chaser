@@ -28,6 +28,16 @@ export interface ChaseProposal {
   rule: string;
   /** Set when the stage was escalated because a recorded promise to pay was broken. */
   broken_promise?: { pay_by: string; amount?: number };
+  /** PayPal's detail.viewed_by_recipient for this invoice (undefined when the source does not carry it). */
+  viewed?: boolean;
+  /** reminder: the normal stage reminder; resend: the invoice was never opened, so re-deliver it and check the address. */
+  channel: "reminder" | "resend";
+}
+
+/** Should this reminder be a re-delivery instead of a chase? Only when PayPal says the invoice was never opened. */
+export function unviewedResend(inv: Pick<Invoice, "viewed_by_recipient">, days: number, policy: Policy): boolean {
+  const r = policy.reminders;
+  return r.viewedAware && r.unviewedStrategy === "resend" && inv.viewed_by_recipient === false && days >= r.unviewedAfterDays;
 }
 
 const ORDER: ChaseStage[] = ["none", "friendly", "firm", "final"];
@@ -104,6 +114,7 @@ export function planCollections(invoices: Invoice[], policy: Policy, now: Date, 
     }
     if (stage === "none") continue;
     if (ORDER.indexOf(stage) <= ORDER.indexOf(sent)) continue;
+    const resend = !broken && unviewedResend(inv, days, policy);
     if (inv.reminders.length >= policy.reminders.maxReminders) continue;
     const last = inv.reminders.at(-1);
     if (last && (now.getTime() - new Date(last.at).getTime()) / 86_400_000 < policy.reminders.minDaysBetweenReminders) continue;
@@ -120,25 +131,46 @@ export function planCollections(invoices: Invoice[], policy: Policy, now: Date, 
       last_reminder_at: last?.at,
       pay_link: inv.links.pay,
       items: inv.items.map((i) => i.name).join(", "),
-      draft: draftReminder(inv, stage, days, merchant, broken),
+      draft: resend ? draftResend(inv, stage, days, merchant) : draftReminder(inv, stage, days, merchant, broken, inv.viewed_by_recipient === true && policy.reminders.viewedAware),
       risk: predictInvoice(inv, profile, now).risk,
       predicted_pay_date: predictInvoice(inv, profile, now).predicted_pay_date,
       thresholds: thresholdsFor(policy, inv.chase_override, profile.band),
       ...(broken
         ? { why: `promise to pay${broken.amount !== undefined ? ` ${money(broken.amount, inv.currency)}` : ""} by ${broken.pay_by} was not kept (grace ${policy.promises.graceDays} day${policy.promises.graceDays === 1 ? "" : "s"}); escalated from ${sent} to ${stage} (promises.brokenEscalates)`, rule: "promises.brokenEscalates" }
-        : explainStage(stage, days, policy, inv, profile)),
+        : resend
+          ? { why: `${explainStage(stage, days, policy, inv, profile).why}; PayPal shows the invoice was never opened (viewed_by_recipient = false) after ${days} days, so it is re-delivered with an address check instead of a ${stage} reminder (reminders.unviewedStrategy = resend)`, rule: "reminders.unviewedStrategy" }
+          : explainStage(stage, days, policy, inv, profile)),
       broken_promise: broken,
+      viewed: inv.viewed_by_recipient,
+      channel: resend ? "resend" : "reminder",
     });
   }
   return out.sort((a, b) => b.overdue_days - a.overdue_days);
 }
 
 /** Template reminder used by the mock planner and offered to the LLM as a starting point. */
-export function draftReminder(inv: Invoice, stage: Exclude<ChaseStage, "none">, days: number, merchant: string, broken?: { pay_by: string; amount?: number }): { subject: string; note: string } {
+/**
+ * Re-delivery for an invoice PayPal says was never opened: same stage words in the subject (so the reminder count and
+ * stage inference still apply), but the body asks whether it reached the right person instead of pressing harder.
+ */
+export function draftResend(inv: Invoice, stage: Exclude<ChaseStage, "none">, days: number, merchant: string): { subject: string; note: string } {
   const first = inv.client.given_name;
   const amt = money(inv.due, inv.currency);
   const work = inv.items.map((i) => i.name).join(", ");
   const pay = inv.links.pay ? `\n\nPay securely here: ${inv.links.pay}` : "";
+  const head = stage === "final" ? `Final notice (resent)` : stage === "firm" ? `Resending: ${days} days overdue` : `Resending`;
+  return {
+    subject: `${head}: invoice ${inv.invoice_number} (${amt}) - did this reach you?`,
+    note: `Hi ${first},\n\nI am resending invoice ${inv.invoice_number} for ${amt} (${work}), due ${inv.due_date} and now ${days} days past due. PayPal shows it has not been opened yet, so I want to make sure it reached the right person: if ${inv.client.email} is not the best address for invoices, reply with the right contact and I will send it there (a QR code for the payment page is available too).${stage === "final" ? " If it has simply been missed, this is the final reminder before I pause further work as per our agreement." : ""}${pay}\n\nThanks,\n${merchant}`,
+  };
+}
+
+export function draftReminder(inv: Invoice, stage: Exclude<ChaseStage, "none">, days: number, merchant: string, broken?: { pay_by: string; amount?: number }, viewed = false): { subject: string; note: string } {
+  const first = inv.client.given_name;
+  const amt = money(inv.due, inv.currency);
+  const work = inv.items.map((i) => i.name).join(", ");
+  const pay = inv.links.pay ? `\n\nPay securely here: ${inv.links.pay}` : "";
+  const seen = viewed ? " PayPal shows the invoice has been opened, so I know it reached you." : "";
   if (broken) {
     const promised = broken.amount !== undefined ? money(broken.amount, inv.currency) : "payment";
     const tone = stage === "final" ? `This is now a final notice: if the balance is not settled within 5 business days I will have to pause further work and apply the late fee in our agreement.` : `Could you let me know today when it will go out, or whether anything is blocking it?`;
@@ -156,12 +188,12 @@ export function draftReminder(inv: Invoice, stage: Exclude<ChaseStage, "none">, 
     case "firm":
       return {
         subject: `Overdue: invoice ${inv.invoice_number} - ${amt}, ${days} days past due`,
-        note: `Hi ${first},\n\nInvoice ${inv.invoice_number} (${work}) for ${amt} is now ${days} days past its ${inv.due_date} due date. Could you let me know when payment will be made, or if anything is blocking it on your side?${pay}\n\nBest,\n${merchant}`,
+        note: `Hi ${first},\n\nInvoice ${inv.invoice_number} (${work}) for ${amt} is now ${days} days past its ${inv.due_date} due date.${seen} Could you let me know when payment will be made, or if anything is blocking it on your side?${pay}\n\nBest,\n${merchant}`,
       };
     case "final":
       return {
         subject: `Final notice: invoice ${inv.invoice_number} - ${amt}`,
-        note: `Hi ${first},\n\nThis is a final reminder for invoice ${inv.invoice_number} (${work}), ${amt}, now ${days} days overdue. If I do not hear back within 5 business days I will have to pause further work and apply the late fee in our agreement. I would much rather sort this out - reply here or pay via the link.${pay}\n\nRegards,\n${merchant}`,
+        note: `Hi ${first},\n\nThis is a final reminder for invoice ${inv.invoice_number} (${work}), ${amt}, now ${days} days overdue.${seen} If I do not hear back within 5 business days I will have to pause further work and apply the late fee in our agreement. I would much rather sort this out - reply here or pay via the link.${pay}\n\nRegards,\n${merchant}`,
       };
   }
 }

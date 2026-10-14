@@ -15,6 +15,12 @@ export const PolicySchema = z.object({
     adaptToHistory: z.boolean().default(true),
     /** How many days the stages move for a late-risk (earlier) or reliable (later) payer when adaptToHistory is on. */
     historyShiftDays: z.number().int().min(0).max(30).default(3),
+    /** Use PayPal's invoice-viewed signal (detail.viewed_by_recipient): an invoice never opened is re-delivered instead of chased harder. */
+    viewedAware: z.boolean().default(true),
+    /** Days overdue after which a never-opened invoice gets the unviewed strategy instead of a firm/final reminder. */
+    unviewedAfterDays: z.number().int().min(0).max(90).default(5),
+    /** resend: re-deliver with a "did this reach you / check the address" note; ignore: chase as if it had been opened. */
+    unviewedStrategy: z.enum(["resend", "ignore"]).default("resend"),
   }),
   disputes: z.object({
     /** Disputes strictly under this amount are accepted automatically. */
