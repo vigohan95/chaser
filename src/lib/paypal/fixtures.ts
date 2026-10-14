@@ -71,6 +71,8 @@ interface Spec {
   net: number;
   status: Invoice["status"];
   paid?: number;
+  /** For paid history: when the payment landed (drives days-to-pay / lateness in the payer profile). */
+  paidDaysAgo?: number;
   refunded?: number;
   reminders?: Array<{ daysAgo: number; stage: "friendly" | "firm" | "final" }>;
   reference?: string;
@@ -98,7 +100,15 @@ const SPECS: Spec[] = [
   { n: 18, client: "juniper", items: [{ name: "Rush fee", quantity: 1, unit_amount: 15 }], issuedDaysAgo: 18, net: 7, status: "PAID", paid: 15 },
   { n: 19, client: "solstice", items: [{ name: "Team workshop", description: "Half-day brand workshop", quantity: 1, unit_amount: 480 }], issuedDaysAgo: 24, net: 7, status: "PAID", paid: 480 },
   { n: 20, client: "pinecrest", items: [{ name: "Photo retouching", quantity: 1, unit_amount: 320 }], issuedDaysAgo: 48, net: 14, status: "PARTIALLY_REFUNDED", paid: 320, refunded: 120 },
+  // Older paid invoices: the payer history the predictions and the adaptive cadence are computed from.
+  { n: 21, client: "acme", items: [{ name: "Landing page copy", description: "Hero, features, FAQ", quantity: 1, unit_amount: 1100 }], issuedDaysAgo: 95, net: 15, status: "PAID", paid: 1100, paidDaysAgo: 65, reminders: [{ daysAgo: 75, stage: "friendly" }, { daysAgo: 68, stage: "firm" }] },
+  { n: 22, client: "acme", items: [{ name: "Icon set", description: "48 product icons, 3 weights", quantity: 1, unit_amount: 640 }], issuedDaysAgo: 130, net: 15, status: "PAID", paid: 640, paidDaysAgo: 103, reminders: [{ daysAgo: 110, stage: "friendly" }] },
+  { n: 23, client: "bluebird", items: [{ name: "Pitch deck", description: "22 slides, investor version", quantity: 1, unit_amount: 900 }], issuedDaysAgo: 80, net: 15, status: "PAID", paid: 900, paidDaysAgo: 56, reminders: [{ daysAgo: 61, stage: "friendly" }] },
+  { n: 24, client: "bluebird", items: [{ name: "Event banners", description: "3 roll-up banners, print-ready", quantity: 1, unit_amount: 380 }], issuedDaysAgo: 115, net: 15, status: "PAID", paid: 380, paidDaysAgo: 94, reminders: [{ daysAgo: 96, stage: "friendly" }] },
 ];
+
+/** First invoice sequence number the mock `create_invoice` hands out (demo data uses 1..FIRST_FREE_SEQ-1). */
+export const FIRST_FREE_SEQ = SPECS.length + 1;
 
 export function buildInvoices(now: Date): Invoice[] {
   return SPECS.map((s) => {
@@ -124,6 +134,7 @@ export function buildInvoices(now: Date): Invoice[] {
       due_date: isoDate(due),
       reference: s.reference,
       note: s.note,
+      paid_at: s.paidDaysAgo !== undefined ? isoDate(daysAgo(now, s.paidDaysAgo)) : undefined,
       reminders: (s.reminders ?? []).map((r) => ({ at: daysAgo(now, r.daysAgo).toISOString(), stage: r.stage })),
       chase_override: "default",
       links: {
@@ -165,6 +176,10 @@ export function buildTransactions(now: Date, invoices: Invoice[]): Transaction[]
     pay("t18", byNumber(18), CLIENTS.juniper, 15, 15),
     pay("t19", byNumber(19), CLIENTS.solstice, 480, 20, "Workshop"),
     pay("t20", byNumber(20), CLIENTS.pinecrest, 320, 46),
+    pay("t21", byNumber(21), CLIENTS.acme, 1100, 65, "INV-0021 sorry for the delay"),
+    pay("t22", byNumber(22), CLIENTS.acme, 640, 103, "Icon set"),
+    pay("t23", byNumber(23), CLIENTS.bluebird, 900, 56, "INV-0023"),
+    pay("t24", byNumber(24), CLIENTS.bluebird, 380, 94),
     {
       id: txnId("r20"),
       date: daysAgo(now, 30).toISOString(),

@@ -11,6 +11,10 @@ export const PolicySchema = z.object({
     finalAfterDays: z.number().int().min(0).max(365).default(21),
     minDaysBetweenReminders: z.number().int().min(0).max(90).default(3),
     maxReminders: z.number().int().min(0).max(20).default(4),
+    /** Shift the cadence by the payer's own PayPal history: habitual late payers get firm/final earlier, reliable payers later. */
+    adaptToHistory: z.boolean().default(true),
+    /** How many days the stages move for a late-risk (earlier) or reliable (later) payer when adaptToHistory is on. */
+    historyShiftDays: z.number().int().min(0).max(30).default(3),
   }),
   disputes: z.object({
     /** Disputes strictly under this amount are accepted automatically. */

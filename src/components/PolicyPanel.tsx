@@ -49,6 +49,11 @@ export default function PolicyPanel({ policy, onSave }: { policy: Policy; onSave
         <Num label="Final notice after" value={r.finalAfterDays} suffix="days" onChange={(v) => setDraft({ ...draft, reminders: { ...r, finalAfterDays: v } })} />
         <Num label="Min gap between reminders" value={r.minDaysBetweenReminders} suffix="days" onChange={(v) => setDraft({ ...draft, reminders: { ...r, minDaysBetweenReminders: v } })} />
         <Num label="Max reminders per invoice" value={r.maxReminders} onChange={(v) => setDraft({ ...draft, reminders: { ...r, maxReminders: v } })} />
+        <label className="flex items-center justify-between gap-2 text-sm" title="Habitual late payers (by their own PayPal payment history) get firm/final earlier; reliable payers later. The ledger cites reminders.adaptToHistory with the numbers.">
+          <span className="text-muted">Adapt cadence to payer history</span>
+          <input type="checkbox" checked={r.adaptToHistory} onChange={(e) => setDraft({ ...draft, reminders: { ...r, adaptToHistory: e.target.checked } })} />
+        </label>
+        {r.adaptToHistory && <Num label="Shift for late-risk / reliable payers" value={r.historyShiftDays} suffix="days" onChange={(v) => setDraft({ ...draft, reminders: { ...r, historyShiftDays: v } })} />}
       </div>
       <div className="space-y-1.5">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted">Money boundaries</div>

@@ -11,7 +11,7 @@
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { AuditEntry, ChaseOverride, Dispute, Invoice, Product, ReminderRecord, Subscription, SubscriptionPlan, Tracking, Transaction } from "./paypal/types";
-import { buildDisputes, buildInvoices, buildPlans, buildProducts, buildSubscriptions, buildTrackings, buildTransactions } from "./paypal/fixtures";
+import { buildDisputes, buildInvoices, buildPlans, buildProducts, buildSubscriptions, buildTrackings, buildTransactions, FIRST_FREE_SEQ } from "./paypal/fixtures";
 import { DEFAULT_POLICY, parsePolicy, type Policy } from "./policy/schema";
 import { isMockPayPal } from "./env";
 
@@ -66,7 +66,7 @@ export function freshMockData(now = new Date()): MockData {
     products: buildProducts(),
     plans: buildPlans(),
     subscriptions: buildSubscriptions(),
-    seq: 21,
+    seq: FIRST_FREE_SEQ,
   };
 }
 
@@ -78,7 +78,7 @@ export function createStore(now = new Date(), policy?: Policy): Store {
         id: "a0",
         ts: now.toISOString(),
         actor: "system",
-        action: isMockPayPal() ? "Demo data loaded (20 invoices, 11 transactions, 2 disputes, 1 shipment)." : "Connected to the PayPal sandbox: invoices, transactions and disputes are listed from PayPal through the Agent Toolkit.",
+        action: isMockPayPal() ? `Demo data loaded (${FIRST_FREE_SEQ - 1} invoices, ${buildTransactions(now, buildInvoices(now)).length} transactions, 2 disputes, 1 shipment).` : "Connected to the PayPal sandbox: invoices, transactions and disputes are listed from PayPal through the Agent Toolkit.",
         decision: "info",
       },
     ],
@@ -138,7 +138,7 @@ export function hydrateSnapshot(raw: unknown): Store {
       products: Array.isArray(m.products) ? (m.products as Product[]) : buildProducts(),
       plans: Array.isArray(m.plans) ? (m.plans as SubscriptionPlan[]) : buildPlans(),
       subscriptions: Array.isArray(m.subscriptions) ? (m.subscriptions as Subscription[]) : [],
-      seq: typeof m.seq === "number" && m.seq >= 21 ? m.seq : 21 + (m.invoices as Invoice[]).length,
+      seq: typeof m.seq === "number" && m.seq >= FIRST_FREE_SEQ ? m.seq : FIRST_FREE_SEQ + (m.invoices as Invoice[]).length,
     },
     seededAt: typeof s.seededAt === "string" ? s.seededAt : new Date().toISOString(),
     version: typeof s.version === "number" ? s.version : 1,

@@ -257,7 +257,8 @@ function collectionsPlaybook(turn: Turn): Action {
   }
   const lines = proposals.map((p) => {
     const r = sent.find((x) => s(x.input.invoice_id) === s(p.invoice_id));
-    return `- ${s(p.invoice_number)} ${s(p.client)} - ${s(p.stage)} reminder, ${usd(n(p.amount_due))}, ${n(p.overdue_days)} days overdue: ${outcomeLine(r, (o) => `sent to ${s(o.reminder_sent_to, s(p.email))}`)}`;
+    const history = s(p.rule) === "reminders.adaptToHistory" ? ` (${s(p.risk)} payer: ${s(p.why)})` : "";
+    return `- ${s(p.invoice_number)} ${s(p.client)} - ${s(p.stage)} reminder, ${usd(n(p.amount_due))}, ${n(p.overdue_days)} days overdue${history}: ${outcomeLine(r, (o) => `sent to ${s(o.reminder_sent_to, s(p.email))}`)}`;
   });
   const okCount = sent.filter((r) => !r.denied && !r.error).length;
   return {

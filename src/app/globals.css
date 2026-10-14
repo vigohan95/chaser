@@ -66,6 +66,10 @@ body {
   @apply border-accent bg-accent text-white hover:bg-accent-strong hover:border-accent-strong hover:text-white;
 }
 
+.late-risk-row {
+  box-shadow: inset 3px 0 0 var(--bad);
+}
+
 .prose-chat a {
   color: var(--accent);
   text-decoration: underline;

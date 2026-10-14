@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { runOnce } from "@/lib/agent/run";
 import { statePayload, withSnapshot } from "@/lib/api";
+import { buildInvoices, FIRST_FREE_SEQ } from "@/lib/paypal/fixtures";
 import { createStore, getStore, hydrateSnapshot, resetStore, runWithStore } from "@/lib/store";
 
 beforeEach(() => {
@@ -13,8 +14,8 @@ beforeEach(() => {
 
 describe("hydrateSnapshot", () => {
   it("falls back to fresh demo data for garbage", () => {
-    expect(hydrateSnapshot(undefined).mock.invoices.length).toBe(20);
-    expect(hydrateSnapshot({ mock: {} }).mock.invoices.length).toBe(20);
+    expect(hydrateSnapshot(undefined).mock.invoices.length).toBe(FIRST_FREE_SEQ - 1);
+    expect(hydrateSnapshot({ mock: {} }).mock.invoices.length).toBe(FIRST_FREE_SEQ - 1);
     expect(hydrateSnapshot("nope").audit.length).toBe(1);
   });
   it("round-trips a serialized store and re-validates the policy", () => {
@@ -44,7 +45,7 @@ describe("request-scoped store through the agent loop", () => {
     const scopedReminders = result.store.mock.invoices.reduce((a, i) => a + i.reminders.length, 0);
     const globalReminders = getStore().mock.invoices.reduce((a, i) => a + i.reminders.length, 0);
     expect(scopedReminders).toBeGreaterThan(globalReminders);
-    expect(globalReminders).toBe(3); // untouched fixtures: INV-0001 x1, INV-0010 x2
+    expect(globalReminders).toBe(buildInvoices(new Date()).reduce((a, i) => a + i.reminders.length, 0)); // untouched fixtures
     expect(result.store.audit.some((a) => a.tool === "send_invoice_reminder")).toBe(true);
     expect(getStore().audit.length).toBe(1);
     expect(result.payload.view.version).toBe(result.store.version);

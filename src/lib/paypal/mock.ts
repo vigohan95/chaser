@@ -68,7 +68,7 @@ function toPayPalInvoice(inv: Invoice) {
     items: inv.items.map((i) => ({ name: i.name, description: i.description, quantity: String(i.quantity), unit_amount: { currency_code: inv.currency, value: i.unit_amount.toFixed(2) } })),
     amount: { currency_code: inv.currency, value: inv.total.toFixed(2) },
     due_amount: { currency_code: inv.currency, value: inv.due.toFixed(2) },
-    payments: { paid_amount: { currency_code: inv.currency, value: inv.paid.toFixed(2) } },
+    payments: { paid_amount: { currency_code: inv.currency, value: inv.paid.toFixed(2) }, transactions: inv.paid_at ? [{ type: "PAYPAL", payment_date: inv.paid_at, amount: { currency_code: inv.currency, value: inv.paid.toFixed(2) } }] : undefined },
     refunds: inv.refunded ? { refund_amount: { currency_code: inv.currency, value: inv.refunded.toFixed(2) } } : undefined,
     links: [
       inv.links.view && { href: inv.links.view, rel: "self", method: "GET" },

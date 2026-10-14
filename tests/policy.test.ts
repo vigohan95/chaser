@@ -12,7 +12,7 @@ const inv = (n: string) => invoices.find((i) => i.invoice_number === n)!;
 
 describe("policy schema", () => {
   it("has sane defaults", () => {
-    expect(DEFAULT_POLICY.reminders).toEqual({ friendlyAfterDays: 3, firmAfterDays: 10, finalAfterDays: 21, minDaysBetweenReminders: 3, maxReminders: 4 });
+    expect(DEFAULT_POLICY.reminders).toEqual({ friendlyAfterDays: 3, firmAfterDays: 10, finalAfterDays: 21, minDaysBetweenReminders: 3, maxReminders: 4, adaptToHistory: true, historyShiftDays: 3 });
     expect(DEFAULT_POLICY.disputes.autoAcceptUnder).toBe(20);
     expect(DEFAULT_POLICY.approvals.refundsOver).toBe(500);
   });

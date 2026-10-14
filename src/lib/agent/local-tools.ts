@@ -12,6 +12,7 @@ import { isOpenInvoice, money, round2, unappliedAmount } from "../paypal/types";
 import { audit, bump, disputeOverlayFor, getStore, overlayFor } from "../store";
 import { overdueDays, planCollections } from "./chase";
 import { buildEvidencePack } from "./evidence";
+import { payerProfiles, predictInvoice, unknownProfile } from "./payer-history";
 import { matchTransactions } from "./reconcile";
 
 async function evidenceFor(dispute_id: string) {
@@ -80,13 +81,16 @@ export const localTools = {
           byEmail.set(i.client.email, list);
         }
       }
+      const profiles = payerProfiles(invoices, transactions);
       const customers = [...byEmail.values()].map((list) => {
         const c = list[0].client;
+        const profile = profiles.get(c.email.toLowerCase()) ?? unknownProfile(c.email);
         return {
           business: c.business,
           given_name: c.given_name,
           surname: c.surname,
           email: c.email,
+          payment_history: { band: profile.band, paid_invoices: profile.sample, median_days_late: profile.median_days_late, late_rate: profile.late_rate, reminders_avg: profile.reminders_avg, basis: profile.basis },
           invoices: list.map((i) => ({
             invoice_id: i.id,
             invoice_number: i.invoice_number,
@@ -94,6 +98,7 @@ export const localTools = {
             total: i.total,
             due: i.due,
             due_date: i.due_date,
+            predicted_pay_date: isOpenInvoice(i) ? predictInvoice(i, profile, new Date()).predicted_pay_date : undefined,
             items: i.items.map((x) => x.name),
             transactions: transactions.filter((t) => t.invoice_id === i.id).map((t) => ({ transaction_id: t.id, capture_id: t.capture_id, amount: t.amount, type: t.type, date: t.date })),
           })),
@@ -104,14 +109,22 @@ export const localTools = {
   }),
 
   propose_collections: tool({
-    description: "Apply the user's reminder policy to every open invoice and return the reminders that are due right now (stage friendly/firm/final, days overdue, amount, and a drafted subject + note you may improve). Call this before sending reminders.",
+    description: "Apply the user's reminder policy to every open invoice and return the reminders that are due right now (stage friendly/firm/final, days overdue, amount, the payer's risk band and predicted pay date, why this stage now, and a drafted subject + note you may improve). The cadence adapts to each payer's own PayPal payment history when reminders.adaptToHistory is on. Call this before sending reminders.",
     inputSchema: z.object({ invoice_ids: z.array(z.string()).optional().describe("Limit to these invoice ids or numbers") }),
     execute: async ({ invoice_ids }) => {
       const store = getStore();
       const now = new Date();
-      let invoices = await getInvoices();
-      if (invoice_ids?.length) invoices = invoices.filter((i) => invoice_ids.includes(i.id) || invoice_ids.includes(i.invoice_number));
-      const proposals = planCollections(invoices, store.policy, now, merchantProfile().givenName);
+      const all = await getInvoices();
+      const transactions = await getTransactions();
+      // Payer history always comes from the whole book, even when the chase is limited to a few invoices.
+      const full = planCollections(all, store.policy, now, merchantProfile().givenName, transactions);
+      const invoices = invoice_ids?.length ? all.filter((i) => invoice_ids.includes(i.id) || invoice_ids.includes(i.invoice_number)) : all;
+      const proposals = full.filter((p) => invoices.some((i) => i.id === p.invoice_id));
+      for (const p of proposals) {
+        if (p.rule !== "reminders.adaptToHistory") continue;
+        // The cadence decision itself goes in the ledger, with the numbers it rests on.
+        audit({ actor: "policy", tool: "propose_collections", action: `${p.invoice_number} ${p.client}: ${p.stage} stage brought ${p.risk === "late-risk" ? "forward" : "back"} by payer history`, decision: "allowed", reason: p.why, rule: p.rule });
+      }
       const skipped = invoices
         .filter(isOpenInvoice)
         .filter((i) => !proposals.some((p) => p.invoice_id === i.id))

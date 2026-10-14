@@ -43,6 +43,8 @@ export interface Invoice {
   due_date: string; // yyyy-mm-dd
   reference?: string;
   note?: string;
+  /** When the invoice was (last) paid, from PayPal's payments.transactions[].payment_date; feeds the payer history. */
+  paid_at?: string; // ISO or yyyy-mm-dd
   /** Local overlay: reminders the agent sent (PayPal does not expose a count). */
   reminders: ReminderRecord[];
   /** Local overlay: per-invoice chasing override. */

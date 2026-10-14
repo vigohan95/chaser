@@ -288,7 +288,7 @@ export default function CommandCenter() {
 
           <div className="min-h-0 flex-1">
             {!view && !loadError && <div className="text-sm text-muted">Loading...</div>}
-            {view && tab === "invoices" && <InvoiceGrid invoices={view.invoices} policy={view.policy} now={now} onSelection={setSelected} onOverrideChanged={onOverrideChanged} />}
+            {view && tab === "invoices" && <InvoiceGrid invoices={view.invoices} transactions={view.transactions} policy={view.policy} now={now} onSelection={setSelected} onOverrideChanged={onOverrideChanged} />}
             {view && tab === "payments" && (
               <div className="flex h-full flex-col gap-3">
                 <div className="min-h-0 flex-[1.1]">

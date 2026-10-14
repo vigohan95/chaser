@@ -89,7 +89,10 @@ export function mapInvoice(pp: unknown): Invoice {
     return { name: s(x.name, "Item"), description: s(x.description) || undefined, quantity: n(x.quantity) || 1, unit_amount: n(j(x.unit_amount).value) };
   });
   const total = n(j(o.amount).value) || round2(items.reduce((a, i) => a + i.quantity * i.unit_amount, 0));
-  const paid = n(j(j(o.payments).paid_amount).value);
+  const payments = j(o.payments);
+  const paid = n(j(payments.paid_amount).value);
+  // payments.transactions[].payment_date is PayPal's record of when the money landed: the payer-history signal.
+  const paidAt = ((payments.transactions as unknown[] | undefined) ?? []).map((t) => s(j(t).payment_date)).filter(Boolean).sort().at(-1);
   const refunded = n(j(j(o.refunds).refund_amount).value);
   const dueAmt = o.due_amount !== undefined ? n(j(o.due_amount).value) : round2(Math.max(0, total - paid));
   const links = ((o.links as unknown[] | undefined) ?? []).map(j);
@@ -117,6 +120,7 @@ export function mapInvoice(pp: unknown): Invoice {
     due_date: (s(j(detail.payment_term).due_date) || noteDue || s(detail.invoice_date)).slice(0, 10),
     reference: s(detail.reference) || undefined,
     note: s(detail.note) || undefined,
+    paid_at: paidAt || undefined,
     reminders: [],
     chase_override: "default",
     links: { view, pay },
