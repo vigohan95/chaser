@@ -93,7 +93,7 @@ const SPECS: Spec[] = [
   { n: 7, client: "pinecrest", items: [{ name: "Listing video", description: "Edit + color grade", quantity: 3, unit_amount: 700 }], issuedDaysAgo: 26, net: 14, status: "PAID", paid: 2100 },
   { n: 8, client: "vireo", items: [{ name: "API integration sprint", description: "2-week sprint, Stripe to PayPal migration", quantity: 1, unit_amount: 3200 }], issuedDaysAgo: 39, net: 14, status: "PAID", paid: 3200 },
   { n: 9, client: "acme", items: [{ name: "SEO audit", quantity: 1, unit_amount: 750 }], issuedDaysAgo: 8, net: 15, status: "UNPAID", viewed: false },
-  { n: 10, client: "bluebird", items: [{ name: "Social media templates", description: "Canva pack, 24 layouts", quantity: 1, unit_amount: 420 }], issuedDaysAgo: 45, net: 15, status: "UNPAID", reminders: [{ daysAgo: 26, stage: "friendly" }, { daysAgo: 18, stage: "firm" }] },
+  { n: 10, client: "bluebird", items: [{ name: "Social media templates", description: "Canva pack, 24 layouts", quantity: 1, unit_amount: 420 }], issuedDaysAgo: 45, net: 15, status: "UNPAID", reminders: [{ daysAgo: 26, stage: "friendly" }, { daysAgo: 18, stage: "firm" }, { daysAgo: 9, stage: "final" }] },
   { n: 11, client: "northwind", items: [{ name: "Logo refresh", description: "Includes printed brand book (shipped)", quantity: 1, unit_amount: 1200 }], issuedDaysAgo: 55, net: 15, status: "PAID", paid: 1200 },
   { n: 12, client: "juniper", items: [{ name: "Holiday campaign - deposit", quantity: 1, unit_amount: 300 }], issuedDaysAgo: 6, net: 7, status: "UNPAID", viewed: false },
   { n: 13, client: "harbor", items: [{ name: "Court exhibit graphics", description: "Timeline + 4 diagrams", quantity: 1, unit_amount: 1350 }], issuedDaysAgo: 35, net: 30, status: "UNPAID" },
@@ -109,6 +109,9 @@ const SPECS: Spec[] = [
   { n: 22, client: "acme", items: [{ name: "Icon set", description: "48 product icons, 3 weights", quantity: 1, unit_amount: 640 }], issuedDaysAgo: 130, net: 15, status: "PAID", paid: 640, paidDaysAgo: 103, reminders: [{ daysAgo: 110, stage: "friendly" }] },
   { n: 23, client: "bluebird", items: [{ name: "Pitch deck", description: "22 slides, investor version", quantity: 1, unit_amount: 900 }], issuedDaysAgo: 80, net: 15, status: "PAID", paid: 900, paidDaysAgo: 56, reminders: [{ daysAgo: 61, stage: "friendly" }] },
   { n: 24, client: "bluebird", items: [{ name: "Event banners", description: "3 roll-up banners, print-ready", quantity: 1, unit_amount: 380 }], issuedDaysAgo: 115, net: 15, status: "PAID", paid: 380, paidDaysAgo: 94, reminders: [{ daysAgo: 96, stage: "friendly" }] },
+  // Past the final notice: what collections.afterFinal decides (write-off under $50, settlement up to $1,000, else hand-off).
+  { n: 25, client: "pinecrest", items: [{ name: "Floor plan touch-ups", description: "2 listings", quantity: 1, unit_amount: 38 }], issuedDaysAgo: 60, net: 14, status: "UNPAID", reminders: [{ daysAgo: 40, stage: "friendly" }, { daysAgo: 30, stage: "firm" }, { daysAgo: 12, stage: "final" }] },
+  { n: 26, client: "northwind", items: [{ name: "Trade show booth graphics", description: "3 x 6 m backwall, counters, 2 banners", quantity: 1, unit_amount: 2600 }], issuedDaysAgo: 70, net: 15, status: "UNPAID", reminders: [{ daysAgo: 50, stage: "friendly" }, { daysAgo: 42, stage: "firm" }, { daysAgo: 20, stage: "final" }], reference: "PO-2210", viewed: true },
 ];
 
 /** First invoice sequence number the mock `create_invoice` hands out (demo data uses 1..FIRST_FREE_SEQ-1). */

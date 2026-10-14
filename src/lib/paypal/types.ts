@@ -53,7 +53,27 @@ export interface Invoice {
   chase_override: ChaseOverride;
   /** Local overlay: the client's promise to pay (chasing pauses until pay_by; a broken promise escalates). */
   promise?: PromiseToPay;
+  /** Local overlay: what happened after the final notice (collections.afterFinal). */
+  resolution?: AfterFinalResolution;
   links: { view?: string; pay?: string; qr?: string };
+}
+
+export type AfterFinalKind = "write_off" | "settlement" | "handoff";
+
+export interface AfterFinalResolution {
+  kind: AfterFinalKind;
+  at: string; // ISO
+  /** Balance at the time. */
+  amount: number;
+  /** Settlement: the discounted amount and the replacement invoice that carries it. */
+  offer_amount?: number;
+  offer_invoice_id?: string;
+  offer_invoice_number?: string;
+  /** Hand-off: the pack (Markdown). */
+  pack?: string;
+  note?: string;
+  /** Policy field the decision rested on. */
+  rule: string;
 }
 
 export interface PromiseToPay {

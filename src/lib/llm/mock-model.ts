@@ -150,10 +150,12 @@ function parseTracking(text: string): { number?: string; carrier?: string } {
   return { number: num, carrier };
 }
 
-export type Intent = "refund" | "collections" | "reconcile" | "disputes" | "tracking" | "subscription" | "override" | "status" | "invoice" | "promise" | "help";
+export type Intent = "refund" | "collections" | "reconcile" | "disputes" | "tracking" | "subscription" | "override" | "status" | "invoice" | "promise" | "statement" | "afterfinal" | "help";
 
 export function detectIntent(text: string): Intent {
   const t = text.toLowerCase();
+  if (/\bstatement\b/.test(t)) return "statement";
+  if (/\b(write[- ]?off|written off|settlement|settle|hand[- ]?off|hand over|after[- ]final)\b/.test(t)) return "afterfinal";
   if (/\b(promise[sd]?|promise to pay|will pay|'ll pay|pay by|pays? on|paying on|client (?:replied|says|said|wrote|emailed)|reply from|replied)\b/.test(t)) return "promise";
   if (/\brefund\b/.test(t)) return "refund";
   if (/\b(pause|stop chasing|resume|unpause|gentle|aggressive)\b/.test(t)) return "override";
@@ -243,11 +245,8 @@ function collectionsPlaybook(turn: Turn): Action {
   if (!proposed) return { type: "calls", calls: [{ toolName: "propose_collections", input: ids.length ? { invoice_ids: ids } : {} }] };
   const proposals = arr(proposed.output.proposals);
   const skipped = arr(proposed.output.skipped);
-  if (proposals.length === 0) {
-    return { type: "text", text: `Nothing to chase right now. ${skipped.length ? `I checked ${skipped.length} open invoice(s): ${skipped.map((x) => `${s(x.invoice_number)} (${s(x.reason)})`).join(", ")}.` : "No open invoices are past your reminder thresholds."}` };
-  }
   const sent = has(turn, "send_invoice_reminder");
-  if (sent.length === 0) {
+  if (proposals.length && sent.length === 0) {
     return {
       type: "calls",
       calls: proposals.map((p) => {
@@ -255,6 +254,23 @@ function collectionsPlaybook(turn: Turn): Action {
         return { toolName: "send_invoice_reminder", input: { invoice_id: s(p.invoice_id), subject: s(draft.subject), note: s(draft.note) } };
       }),
     };
+  }
+  // After the reminders: what the policy does once the final notice has gone unanswered.
+  const afterProposed = first(turn, "propose_after_final");
+  if (!afterProposed) return { type: "calls", calls: [{ toolName: "propose_after_final", input: ids.length ? { invoice_ids: ids } : {} }] };
+  const afterProposals = arr(afterProposed.output.proposals);
+  const resolved = has(turn, "resolve_after_final");
+  if (afterProposals.length && resolved.length === 0) {
+    return { type: "calls", calls: afterProposals.map((p) => ({ toolName: "resolve_after_final", input: { invoice_id: s(p.invoice_id), resolution: s(p.resolution) } })) };
+  }
+  const afterLines = afterProposals.map((p) => {
+    const r = resolved.find((x) => s(x.input.invoice_id) === s(p.invoice_id));
+    const what = s(p.resolution) === "write_off" ? `write off ${usd(n(p.amount_due))}` : s(p.resolution) === "settlement" ? `offer a ${n(p.offer_percent)}% settlement (${usd(n(p.offer_amount))} instead of ${usd(n(p.amount_due))})` : `hand-off pack for ${usd(n(p.amount_due))}`;
+    return `- ${s(p.invoice_number)} ${s(p.client)}: ${what} - ${s(p.why)}: ${outcomeLine(r, (o) => (s(j(o.resolution).kind) === "write_off" ? "written off, invoice cancelled on PayPal" : s(j(o.resolution).kind) === "settlement" ? `settlement invoice ${s(o.offer_invoice_number)} sent, pay by ${s(o.pay_by)}; ${s(p.invoice_number)} paused` : "hand-off pack built (see the invoice detail / Download hand-off pack); chasing paused"))}`;
+  });
+  const afterText = afterLines.length ? `\n\nAfter the final notice (collections.afterFinal):\n${afterLines.join("\n")}` : "";
+  if (proposals.length === 0) {
+    return { type: "text", text: `Nothing to chase right now. ${skipped.length ? `I checked ${skipped.length} open invoice(s): ${skipped.map((x) => `${s(x.invoice_number)} (${s(x.reason)})`).join(", ")}.` : "No open invoices are past your reminder thresholds."}${afterText}` };
   }
   const lines = proposals.map((p) => {
     const r = sent.find((x) => s(x.input.invoice_id) === s(p.invoice_id));
@@ -268,7 +284,7 @@ function collectionsPlaybook(turn: Turn): Action {
   const okCount = sent.filter((r) => !r.denied && !r.error).length;
   return {
     type: "text",
-    text: `Collections run complete: ${okCount} of ${proposals.length} reminder(s) sent under your policy (friendly after ${n(j(turn.policy.reminders).friendlyAfterDays, 3)} days, firm after ${n(j(turn.policy.reminders).firmAfterDays, 10)}, final after ${n(j(turn.policy.reminders).finalAfterDays, 21)}).\n${lines.join("\n")}${skipped.length ? `\n\nSkipped: ${skipped.map((x) => `${s(x.invoice_number)} (${s(x.reason)})`).join(", ")}.` : ""}`,
+    text: `Collections run complete: ${okCount} of ${proposals.length} reminder(s) sent under your policy (friendly after ${n(j(turn.policy.reminders).friendlyAfterDays, 3)} days, firm after ${n(j(turn.policy.reminders).firmAfterDays, 10)}, final after ${n(j(turn.policy.reminders).finalAfterDays, 21)}).\n${lines.join("\n")}${skipped.length ? `\n\nSkipped: ${skipped.map((x) => `${s(x.invoice_number)} (${s(x.reason)})`).join(", ")}.` : ""}${afterText}`,
   };
 }
 
@@ -497,6 +513,44 @@ function promisePlaybook(turn: Turn): Action {
   return { type: "text", text: outcomeLine(recorded, () => `Recorded: ${s(o.client)} will pay ${o.promise && j(o.promise).amount ? usd(n(j(o.promise).amount)) : `the ${usd(n(o.balance_due))} balance`} on ${s(o.invoice_number)} by ${payBy}. Chasing is ${s(o.chasing)}; if the money has not arrived by then the next reminder escalates one stage and says so (promises.brokenEscalates). The grid shows the promise on the invoice.`) };
 }
 
+function statementPlaybook(turn: Turn): Action {
+  const ids = parseInvoiceNumbers(turn.userText);
+  const query = ids[0] ?? parseClient(turn.userText) ?? turn.userText.replace(/.*statement (?:of account )?(?:for|of)\s+/i, "").replace(/[?.!]+$/, "").trim();
+  const r = first(turn, "get_statement_of_account");
+  if (!r) return query ? { type: "calls", calls: [{ toolName: "get_statement_of_account", input: { query } }] } : { type: "text", text: "Whose statement? e.g. \"Statement of account for Acme Corp\"." };
+  if (r.error) return { type: "text", text: `I could not build the statement: ${r.error}` };
+  const c = j(r.output.client);
+  return { type: "text", text: `Statement of account for ${s(c.business) || s(c.name)}: ${usd(n(r.output.total_open))} open across ${n(r.output.open_invoices)} invoice(s), ${usd(n(r.output.total_overdue))} overdue. Full statement (Markdown; the invoice detail panel can download it):\n\n${s(r.output.markdown)}` };
+}
+
+function afterFinalPlaybook(turn: Turn): Action {
+  const t = turn.userText.toLowerCase();
+  const ids = parseInvoiceNumbers(turn.userText);
+  const resolution = /write[- ]?off|written off/.test(t) ? "write_off" : /settle/.test(t) ? "settlement" : /hand/.test(t) ? "handoff" : undefined;
+  if (ids.length && resolution) {
+    const done = has(turn, "resolve_after_final");
+    if (done.length === 0) return { type: "calls", calls: ids.map((id) => ({ toolName: "resolve_after_final", input: { invoice_id: id, resolution } })) };
+    const lines = ids.map((id) => {
+      const r = done.find((x) => s(x.input.invoice_id) === id);
+      return `- ${id}: ${outcomeLine(r, (o) => (resolution === "write_off" ? `written off ${usd(n(j(o.resolution).amount))}, invoice cancelled on PayPal` : resolution === "settlement" ? `settlement invoice ${s(o.offer_invoice_number)} for ${usd(n(j(o.resolution).offer_amount))} sent, pay by ${s(o.pay_by)}; ${id} paused` : "hand-off pack built and attached to the invoice (Download hand-off pack in the detail panel); chasing paused"))}`;
+    });
+    const pack = done.find((x) => !x.error && !x.denied && s(x.output.pack));
+    return { type: "text", text: `${lines.join("\n")}${pack ? `\n\n${s(pack.output.pack).slice(0, 3000)}` : ""}` };
+  }
+  // No invoice named: run the policy's after-final pass on the whole book.
+  const proposed = first(turn, "propose_after_final");
+  if (!proposed) return { type: "calls", calls: [{ toolName: "propose_after_final", input: {} }] };
+  const proposals = arr(proposed.output.proposals);
+  if (proposals.length === 0) return { type: "text", text: "No invoice is past its final notice and waiting period, so there is nothing to write off, settle or hand off right now." };
+  const done = has(turn, "resolve_after_final");
+  if (done.length === 0) return { type: "calls", calls: proposals.map((p) => ({ toolName: "resolve_after_final", input: { invoice_id: s(p.invoice_id), resolution: s(p.resolution) } })) };
+  const lines = proposals.map((p) => {
+    const r = done.find((x) => s(x.input.invoice_id) === s(p.invoice_id));
+    return `- ${s(p.invoice_number)} ${s(p.client)} (${usd(n(p.amount_due))}): ${s(p.resolution).replace("_", "-")} - ${s(p.why)}: ${outcomeLine(r, () => "done")}`;
+  });
+  return { type: "text", text: `After the final notice (collections.afterFinal):\n${lines.join("\n")}` };
+}
+
 function statusPlaybook(turn: Turn): Action {
   const r = first(turn, "summarize_receivables");
   if (!r) return { type: "calls", calls: [{ toolName: "summarize_receivables", input: {} }] };
@@ -514,6 +568,7 @@ const HELP = `I am Chaser, your receivables agent on PayPal. Try:
 - "Shipped the brand book for Northwind, UPS 1Z999AA10123456784" - adds tracking
 - "Set up a $1,500 monthly retainer for Northwind Traders" - creates a subscription
 - "Acme says they will pay INV-0001 by the 20th" - records a promise to pay; chasing pauses, a broken promise escalates
+- "Statement of account for Acme Corp" / "Write off INV-0025" / "Hand off INV-0026" - after the final notice, your policy decides
 - "Refund $120 on INV-0007" / "Pause chasing INV-0003" / "What's outstanding?"`;
 
 export function plan(turn: Turn): Action {
@@ -538,6 +593,10 @@ export function plan(turn: Turn): Action {
       return statusPlaybook(turn);
     case "promise":
       return promisePlaybook(turn);
+    case "statement":
+      return statementPlaybook(turn);
+    case "afterfinal":
+      return afterFinalPlaybook(turn);
     default:
       return { type: "text", text: HELP };
   }

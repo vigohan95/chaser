@@ -52,9 +52,10 @@ describe("agent loop (no keys)", () => {
     expect(inv("INV-0003").reminders.at(-1)?.stage).toBe("friendly");
     expect(inv("INV-0004").reminders.length).toBe(0);
     expect(r.text).toMatch(/Collections run complete: \d+ of \d+ reminder/);
-    // second run: nothing new to send
+    // second run: nothing new to send; the after-final pass still runs (its money-affecting resolutions wait for approval)
     const again = await runOnce("Run collections", { unattended: true });
-    expect(again.toolCalls).toEqual(["propose_collections"]);
+    expect(again.toolCalls.slice(0, 2)).toEqual(["propose_collections", "propose_after_final"]);
+    expect(again.toolCalls).not.toContain("send_invoice_reminder");
     expect(again.text).toContain("Nothing to chase");
   });
 

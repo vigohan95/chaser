@@ -48,6 +48,21 @@ export const PolicySchema = z.object({
     /** Promises further out than this need your approval to record. */
     maxDays: z.number().int().min(1).max(365).default(30),
   }),
+  collections: z.object({
+    /** What happens after the final notice, instead of the chase going quiet. */
+    afterFinal: z.object({
+      /** Days after the final notice before any of this is proposed. */
+      waitDays: z.number().int().min(0).max(90).default(7),
+      /** Balances strictly under this are proposed for write-off (cancel_sent_invoice; always needs your approval). */
+      writeOffUnder: z.number().min(0).default(50),
+      /** Discount offered on a replacement invoice; 0 turns settlement offers off. Needs your approval. */
+      settlementOfferPercent: z.number().min(0).max(90).default(10),
+      /** Settlement is only offered up to this balance; above it the invoice goes straight to hand-off. */
+      settlementMaxBalance: z.number().min(0).default(1000),
+      /** Hand-off pack (statement + chase history + evidence): "ask" shows it as an approval card, "auto" builds it unattended. */
+      handoff: z.enum(["ask", "auto"]).default("ask"),
+    }),
+  }),
   reconciliation: z.object({
     /** Record exact matches (amount == due, same payer) without asking. */
     autoRecordExactMatches: z.boolean().default(true),
@@ -66,6 +81,7 @@ export const DEFAULT_POLICY: Policy = PolicySchema.parse({
   disputes: {},
   approvals: {},
   promises: {},
+  collections: { afterFinal: {} },
   reconciliation: {},
 });
 
@@ -77,6 +93,7 @@ export function parsePolicy(input: unknown): Policy {
     disputes: { ...DEFAULT_POLICY.disputes, ...(partial.disputes as object | undefined) },
     approvals: { ...DEFAULT_POLICY.approvals, ...(partial.approvals as object | undefined) },
     promises: { ...DEFAULT_POLICY.promises, ...(partial.promises as object | undefined) },
+    collections: { afterFinal: { ...DEFAULT_POLICY.collections.afterFinal, ...((partial.collections as { afterFinal?: object } | undefined)?.afterFinal ?? {}) } },
     reconciliation: { ...DEFAULT_POLICY.reconciliation, ...(partial.reconciliation as object | undefined) },
     currency: partial.currency ?? DEFAULT_POLICY.currency,
   });

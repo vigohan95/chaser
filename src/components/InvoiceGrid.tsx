@@ -3,6 +3,7 @@
 import { AgGridReact } from "ag-grid-react";
 import type { CellValueChangedEvent, ColDef, ICellRendererParams, RowClassRules, SelectionChangedEvent } from "ag-grid-community";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { daysSinceFinal, decideAfterFinal } from "@/lib/agent/after-final";
 import { explainStage, overdueDays, stageFor, highestStageSent, thresholdsFor, unviewedResend } from "@/lib/agent/chase";
 import { payerProfiles, predictInvoice, unknownProfile, type RiskBand } from "@/lib/agent/payer-history";
 import { describePromise, promiseStatus, type PromiseStatus } from "@/lib/agent/promise";
@@ -127,7 +128,10 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
       let nextStage = "";
       let why = "";
       if (open) {
-        if (i.chase_override === "paused") {
+        if (i.resolution) {
+          nextStage = i.resolution.kind === "write_off" ? "written off" : i.resolution.kind === "settlement" ? `settlement offered (${i.resolution.offer_invoice_number ?? ""})` : "handed off";
+          why = `${i.resolution.kind.replace("_", "-")} on ${shortDate(i.resolution.at)} (${i.resolution.rule}).`;
+        } else if (i.chase_override === "paused") {
           nextStage = "paused";
           why = "Chasing paused for this invoice (invoice.chase_override).";
         } else if (pstate === "open" && policy.promises.pauseChasing) {
@@ -149,8 +153,11 @@ export default function InvoiceGrid({ invoices, transactions, policy, now, onSel
           nextStage = `${nextDue} at day ${nextDay}`;
           why = `${sent === "none" ? "Nothing sent yet" : `${sent} sent`}; ${nextDue} is due at day ${nextDay} (${profile.band === "late-risk" || profile.band === "reliable" ? `cadence shifted for a ${profile.band} payer, reminders.adaptToHistory` : "policy thresholds"}).`;
         } else {
-          nextStage = "final sent";
-          why = "Final notice already sent.";
+          const since = daysSinceFinal(i, now) ?? 0;
+          const d = decideAfterFinal(i, policy);
+          const label = d.resolution === "write_off" ? `write off ${usd(i.due)}` : d.resolution === "settlement" ? `settlement ${usd(d.offer_amount)} (${d.offer_percent}% off)` : "hand-off pack";
+          nextStage = since >= policy.collections.afterFinal.waitDays ? `after final: ${label}` : `final sent; ${label} at day ${policy.collections.afterFinal.waitDays}`;
+          why = `Final notice sent ${since} day(s) ago (wait ${policy.collections.afterFinal.waitDays}); ${d.why} (${d.rule}).`;
         }
       }
       const pred = open ? predictInvoice(i, profile, now) : undefined;

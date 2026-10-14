@@ -78,6 +78,20 @@ export default function PolicyPanel({ policy, onSave }: { policy: Policy; onSave
         <Num label="Ask me for promises further out than" value={draft.promises.maxDays} suffix="days" onChange={(v) => setDraft({ ...draft, promises: { ...draft.promises, maxDays: v } })} />
       </div>
       <div className="space-y-1.5">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted">After the final notice</div>
+        <Num label="Wait after the final notice" value={draft.collections.afterFinal.waitDays} suffix="days" onChange={(v) => setDraft({ ...draft, collections: { afterFinal: { ...draft.collections.afterFinal, waitDays: v } } })} />
+        <Num label="Write off balances under" prefix="$" value={draft.collections.afterFinal.writeOffUnder} onChange={(v) => setDraft({ ...draft, collections: { afterFinal: { ...draft.collections.afterFinal, writeOffUnder: v } } })} />
+        <Num label="Settlement offer (0 = off)" value={draft.collections.afterFinal.settlementOfferPercent} suffix="% off" onChange={(v) => setDraft({ ...draft, collections: { afterFinal: { ...draft.collections.afterFinal, settlementOfferPercent: v } } })} />
+        <Num label="... for balances up to" prefix="$" value={draft.collections.afterFinal.settlementMaxBalance} onChange={(v) => setDraft({ ...draft, collections: { afterFinal: { ...draft.collections.afterFinal, settlementMaxBalance: v } } })} />
+        <label className="flex items-center justify-between gap-2 text-sm">
+          <span className="text-muted">Hand-off pack</span>
+          <select value={draft.collections.afterFinal.handoff} onChange={(e) => setDraft({ ...draft, collections: { afterFinal: { ...draft.collections.afterFinal, handoff: e.target.value as Policy["collections"]["afterFinal"]["handoff"] } } })} className="rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent">
+            <option value="ask">show me first</option>
+            <option value="auto">build without asking</option>
+          </select>
+        </label>
+      </div>
+      <div className="space-y-1.5">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted">Money boundaries</div>
         <Num label="Auto-accept disputes under" prefix="$" value={draft.disputes.autoAcceptUnder} onChange={(v) => setDraft({ ...draft, disputes: { ...draft.disputes, autoAcceptUnder: v } })} />
         <label className="flex items-center justify-between gap-2 text-sm">

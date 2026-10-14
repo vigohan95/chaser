@@ -71,7 +71,7 @@ async function sandboxLists() {
   );
   const invoices = [...details, ...summaries.slice(40)].map((i) => {
     const o = overlayFor(i.id);
-    return { ...i, reminders: o.reminders, chase_override: o.chase_override, promise: o.promise };
+    return { ...i, reminders: o.reminders, chase_override: o.chase_override, promise: o.promise, resolution: o.resolution };
   });
   sandboxCache = {
     at: Date.now(),

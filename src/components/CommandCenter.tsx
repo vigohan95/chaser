@@ -11,7 +11,9 @@ import type { ReconcileResult } from "@/lib/agent/reconcile";
 import AgentDrawer, { type ChatMessage } from "./AgentDrawer";
 import ApprovalLedger from "./ApprovalLedger";
 import AuditTimeline from "./AuditTimeline";
+import InvoiceDetail from "./InvoiceDetail";
 import InvoiceGrid from "./InvoiceGrid";
+import type { Statement } from "@/lib/agent/statement";
 import MatchReview from "./MatchReview";
 import { DisputeGrid, SubscriptionsPanel, TransactionGrid } from "./OtherGrids";
 import PolicyPanel from "./PolicyPanel";
@@ -110,6 +112,19 @@ export default function CommandCenter() {
     try {
       const res = await fetch("/api/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: latestSnapshot }) });
       const data = (await res.json()) as ReconcileResult & { error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
+      return data;
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : String(e));
+      return undefined;
+    }
+  }, []);
+
+  /** Statement of account for one client (pure read on the server). */
+  const fetchStatement = useCallback(async (email: string): Promise<Statement | undefined> => {
+    try {
+      const res = await fetch("/api/statement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, snapshot: latestSnapshot }) });
+      const data = (await res.json()) as Statement & { error?: string };
       if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
       return data;
     } catch (e) {
@@ -293,7 +308,17 @@ export default function CommandCenter() {
 
           <div className="min-h-0 flex-1">
             {!view && !loadError && <div className="text-sm text-muted">Loading...</div>}
-            {view && tab === "invoices" && <InvoiceGrid invoices={view.invoices} transactions={view.transactions} policy={view.policy} now={now} onSelection={setSelected} onOverrideChanged={onOverrideChanged} />}
+            {view && tab === "invoices" && (
+              <div className="flex h-full flex-col gap-2">
+                <div className="min-h-0 flex-1">
+                  <InvoiceGrid invoices={view.invoices} transactions={view.transactions} policy={view.policy} now={now} onSelection={setSelected} onOverrideChanged={onOverrideChanged} />
+                </div>
+                {selected.length === 1 && (() => {
+                  const live = view.invoices.find((i) => i.id === selected[0].id) ?? selected[0];
+                  return <InvoiceDetail invoice={live} policy={view.policy} now={now} fetchStatement={fetchStatement} onAsk={ask} busy={busy} />;
+                })()}
+              </div>
+            )}
             {view && tab === "payments" && (
               <div className="flex h-full flex-col gap-3">
                 <div className="min-h-0 flex-[1.1]">

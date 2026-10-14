@@ -33,7 +33,7 @@ describe("planCollections on the demo book", () => {
     expect(stage("INV-0001")).toBe("final"); // friendly already sent 32 days ago
     expect(stage("INV-0002")).toBe("firm"); // 15 days, nothing sent
     expect(stage("INV-0003")).toBe("friendly"); // 5 days
-    expect(stage("INV-0010")).toBe("final"); // 30 days, friendly+firm sent
+    expect(stage("INV-0010")).toBeUndefined(); // 30 days, friendly+firm+final already sent: after-final territory
     expect(stage("INV-0006")).toBeUndefined(); // partially paid, 10 days, but the client promised the rest (promise open)
     expect(stage("INV-0013")).toBe("friendly");
     expect(stage("INV-0014")).toBe("firm");
@@ -53,9 +53,12 @@ describe("planCollections on the demo book", () => {
     expect(planCollections(recent, DEFAULT_POLICY, now).find((p) => p.invoice_number === "INV-0001")).toBeUndefined();
   });
   it("never re-sends the same or a lower stage", () => {
-    expect(highestStageSent(byNo("INV-0010"))).toBe("firm");
+    expect(highestStageSent(byNo("INV-0010"))).toBe("final");
+    const firmOnly = { ...byNo("INV-0010"), reminders: byNo("INV-0010").reminders.filter((r) => r.stage !== "final") };
+    expect(highestStageSent(firmOnly)).toBe("firm");
     const tight = parsePolicy({ reminders: { finalAfterDays: 60 } });
-    expect(planCollections(invoices, tight, now).find((p) => p.invoice_number === "INV-0010")).toBeUndefined();
+    expect(planCollections([firmOnly], tight, now).find((p) => p.invoice_number === "INV-0010")).toBeUndefined();
+    expect(planCollections([firmOnly], DEFAULT_POLICY, now)[0]?.stage).toBe("final");
   });
   it("orders by most overdue first and includes a usable draft", () => {
     expect(plan[0].invoice_number).toBe("INV-0001");

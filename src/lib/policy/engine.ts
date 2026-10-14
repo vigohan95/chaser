@@ -2,6 +2,7 @@ import type { Dispute, Invoice } from "../paypal/types";
 import { round2 } from "../paypal/types";
 import type { Policy } from "./schema";
 import { promiseStatus } from "../agent/promise";
+import { decideAfterFinal } from "../agent/after-final";
 
 export type Decision = "allow" | "approve" | "deny";
 
@@ -201,6 +202,30 @@ export function evaluateAction(tool: string, rawInput: unknown, ctx: EvaluationC
 
     case "set_chase_override": {
       return { decision: "allow", reason: "Local setting only.", summary: `Set chasing to ${String(input.override ?? "")}`, rule: "default-allow" };
+    }
+
+    case "resolve_after_final": {
+      const inv = findInvoice(ctx, input.invoice_id);
+      const kind = String(input.resolution ?? "");
+      const af = policy.collections.afterFinal;
+      const label = kind === "write_off" ? "Write off" : kind === "settlement" ? "Offer a settlement on" : "Build the hand-off pack for";
+      const summary = `${label} ${inv?.invoice_number ?? String(input.invoice_id ?? "")}${inv ? ` (${fmt(inv.due, ccy)} outstanding)` : ""}`;
+      if (!inv) return { decision: "approve", reason: "Cannot verify the invoice locally; please confirm.", summary, rule: "collections.afterFinal" };
+      if (kind === "write_off") {
+        if (inv.due >= af.writeOffUnder) return { decision: "deny", reason: `${fmt(inv.due, ccy)} is not under your ${fmt(af.writeOffUnder, ccy)} write-off threshold (collections.afterFinal.writeOffUnder).`, summary, rule: "collections.afterFinal.writeOffUnder" };
+        return { decision: "approve", reason: `A write-off takes ${fmt(inv.due, ccy)} off your books and cancels ${inv.invoice_number} on PayPal; under the ${fmt(af.writeOffUnder, ccy)} threshold, but it always needs your approval.`, summary, rule: "collections.afterFinal.writeOffUnder" };
+      }
+      if (kind === "settlement") {
+        if (af.settlementOfferPercent <= 0) return { decision: "deny", reason: "Settlement offers are off in your policy (collections.afterFinal.settlementOfferPercent = 0).", summary, rule: "collections.afterFinal.settlementOfferPercent" };
+        const offer = decideAfterFinal(inv, { ...policy, collections: { afterFinal: { ...af, settlementMaxBalance: Number.MAX_SAFE_INTEGER, writeOffUnder: 0 } } }).offer_amount ?? inv.due;
+        return { decision: "approve", reason: `Offering ${af.settlementOfferPercent}% off (${fmt(offer, ccy)} instead of ${fmt(inv.due, ccy)}) gives money away; a new discounted invoice is created and sent only when you approve.`, summary, rule: "collections.afterFinal.settlementOfferPercent" };
+      }
+      if (kind === "handoff") {
+        return af.handoff === "auto"
+          ? { decision: "allow", reason: "The hand-off pack moves no money; your policy builds it without asking (collections.afterFinal.handoff = auto).", summary, rule: "collections.afterFinal.handoff" }
+          : { decision: "approve", reason: "The hand-off pack pauses chasing and is what you send to a collector or a court; review it first (collections.afterFinal.handoff = ask).", summary, rule: "collections.afterFinal.handoff" };
+      }
+      return { decision: "deny", reason: `Unknown resolution "${kind}".`, summary, rule: "collections.afterFinal" };
     }
 
     case "record_promise": {

@@ -8,12 +8,14 @@ import { merchantProfile } from "../env";
 import { currentMode, execute, getDisputes, getInvoices, getTransactions } from "../paypal/backend";
 import { evaluateAction } from "../policy/engine";
 import { findInvoice as findMockInvoice, setChaseOverride } from "../paypal/mock";
-import { isOpenInvoice, money, round2, unappliedAmount } from "../paypal/types";
+import { isOpenInvoice, money, round2, unappliedAmount, type AfterFinalResolution } from "../paypal/types";
 import { audit, bump, disputeOverlayFor, getStore, overlayFor } from "../store";
 import { overdueDays, planCollections } from "./chase";
 import { buildEvidencePack } from "./evidence";
 import { payerProfiles, predictInvoice, unknownProfile } from "./payer-history";
 import { classifyReply, describePromise, promiseStatus } from "./promise";
+import { decideAfterFinal, planAfterFinal } from "./after-final";
+import { buildHandoffPack, buildStatement } from "./statement";
 import { matchTransactions } from "./reconcile";
 
 async function evidenceFor(dispute_id: string) {
@@ -225,6 +227,91 @@ export const localTools = {
       const ev = evaluateAction("record_promise", { invoice_id: inv.id, pay_by, amount }, { policy: getStore().policy, invoices, disputes: await getDisputes(), now });
       audit({ actor: "agent", tool: "record_promise", action: `${inv.client.business ?? inv.client.email} ${describePromise(promise, "open")} on ${inv.invoice_number}`, decision: ev.decision === "approve" ? "approved" : "allowed", reason: `${ev.decision === "approve" ? "You approved this. " : ""}${ev.reason}${quote ? ` Client: "${quote.slice(0, 160)}"` : ""}`, rule: ev.rule, input: { invoice_id: inv.id, pay_by, amount, source } });
       return { invoice_id: inv.id, invoice_number: inv.invoice_number, client: inv.client.business ?? inv.client.email, balance_due: inv.due, promise, status: promiseStatus({ ...inv, promise }, now, getStore().policy), chasing: getStore().policy.promises.pauseChasing ? `paused until ${pay_by} (+${getStore().policy.promises.graceDays} grace)` : "unchanged" };
+    },
+  }),
+
+  propose_after_final: tool({
+    description: "Apply collections.afterFinal to every open invoice whose final notice is at least waitDays old: proposes write_off (balance under writeOffUnder), settlement (a discounted replacement invoice) or handoff (a pack with the statement of account, chase history and evidence). Read-only; then call resolve_after_final per proposal (the policy decides what needs approval).",
+    inputSchema: z.object({ invoice_ids: z.array(z.string()).optional() }),
+    execute: async ({ invoice_ids }) => {
+      const store = getStore();
+      let invoices = await getInvoices();
+      if (invoice_ids?.length) invoices = invoices.filter((i) => invoice_ids.includes(i.id) || invoice_ids.includes(i.invoice_number));
+      return { now: new Date().toISOString(), policy: store.policy.collections.afterFinal, proposals: planAfterFinal(invoices, store.policy, new Date()) };
+    },
+  }),
+
+  resolve_after_final: tool({
+    description: "Carry out an after-final resolution on one invoice: write_off (cancel the invoice on PayPal and record the write-off), settlement (create and send a replacement invoice discounted by collections.afterFinal.settlementOfferPercent, pause the original), or handoff (build the hand-off pack: statement of account + chase history + evidence; pause chasing). The policy engine decides which of these need the user's approval.",
+    inputSchema: z.object({ invoice_id: z.string().describe("Invoice id or number"), resolution: z.enum(["write_off", "settlement", "handoff"]), note: z.string().max(500).optional() }),
+    execute: async ({ invoice_id, resolution, note }) => {
+      const now = new Date();
+      const store = getStore();
+      const [invoices, transactions] = await Promise.all([getInvoices(), getTransactions()]);
+      const inv = currentMode() === "mock" ? findMockInvoice(invoice_id) : invoices.find((i) => i.id === invoice_id || i.invoice_number === invoice_id);
+      if (!inv) return { error: `Invoice ${invoice_id} not found` };
+      if (!isOpenInvoice(inv)) return { error: `Invoice ${inv.invoice_number} is ${inv.status}.` };
+      if (inv.resolution) return { error: `${inv.invoice_number} already has a resolution: ${inv.resolution.kind} on ${inv.resolution.at.slice(0, 10)}.` };
+      const ev = evaluateAction("resolve_after_final", { invoice_id: inv.id, resolution }, { policy: store.policy, invoices, disputes: await getDisputes(), now });
+      const decided = decideAfterFinal(inv, store.policy);
+      const ctx = { invoices, transactions, now, merchant: merchantProfile(), policy: store.policy };
+      let result: AfterFinalResolution;
+      let detail: Record<string, unknown> = {};
+      if (resolution === "write_off") {
+        await execute("cancel_sent_invoice", { invoice_id: inv.id, note: note ?? `Invoice ${inv.invoice_number} written off after final notice.`, send_to_recipient: true, send_to_invoicer: false });
+        result = { kind: "write_off", at: now.toISOString(), amount: inv.due, note, rule: "collections.afterFinal.writeOffUnder" };
+      } else if (resolution === "settlement") {
+        const af = store.policy.collections.afterFinal;
+        const offer = round2(inv.due * (1 - af.settlementOfferPercent / 100));
+        const payBy = new Date(now.getTime() + 14 * 86_400_000).toISOString().slice(0, 10);
+        const m = merchantProfile();
+        const created = (await execute("create_invoice", {
+          currency_code: inv.currency,
+          invoice_date: now.toISOString().slice(0, 10),
+          note: `Settlement offer for invoice ${inv.invoice_number}: pay ${money(offer, inv.currency)} by ${payBy} (due ${payBy}) and the remaining ${money(round2(inv.due - offer), inv.currency)} is waived. After that date the full ${money(inv.due, inv.currency)} on ${inv.invoice_number} stands.${note ? ` ${note}` : ""}`,
+          invoicer_business_name: m.businessName,
+          invoicer_given_name: m.givenName,
+          invoicer_surname: m.surname,
+          invoicer_email_address: m.invoicerEmail,
+          primary_recipients: [{ billing_info: { business_name: inv.client.business, name: { given_name: inv.client.given_name, surname: inv.client.surname }, email_address: inv.client.email } }],
+          items: [{ name: `Settlement of ${inv.invoice_number}: ${af.settlementOfferPercent}% off ${money(inv.due, inv.currency)}`, description: inv.items.map((i) => i.name).join(", "), quantity: "1", unit_amount: { currency_code: inv.currency, value: offer.toFixed(2) } }],
+        })) as { id: string; detail?: { invoice_number?: string } };
+        await execute("send_invoice", { invoice_id: created.id, send_to_recipient: true });
+        const offerNumber = created.detail?.invoice_number ?? (await getInvoices()).find((i) => i.id === created.id)?.invoice_number ?? created.id;
+        result = { kind: "settlement", at: now.toISOString(), amount: inv.due, offer_amount: offer, offer_invoice_id: created.id, offer_invoice_number: offerNumber, note, rule: "collections.afterFinal.settlementOfferPercent" };
+        detail = { offer_invoice_id: created.id, offer_invoice_number: offerNumber, pay_by: payBy };
+        if (currentMode() === "mock") inv.chase_override = "paused";
+        overlayFor(inv.id).chase_override = "paused";
+      } else {
+        const pack = buildHandoffPack(inv, ctx);
+        result = { kind: "handoff", at: now.toISOString(), amount: inv.due, pack, note, rule: "collections.afterFinal.handoff" };
+        detail = { pack };
+        if (currentMode() === "mock") inv.chase_override = "paused";
+        overlayFor(inv.id).chase_override = "paused";
+      }
+      if (currentMode() === "mock") inv.resolution = result;
+      overlayFor(inv.id).resolution = result;
+      bump();
+      const label = resolution === "write_off" ? `written off ${money(inv.due, inv.currency)}` : resolution === "settlement" ? `settlement offered: ${money(result.offer_amount!, inv.currency)} on ${result.offer_invoice_number}` : "hand-off pack built, chasing paused";
+      audit({ actor: "agent", tool: "resolve_after_final", action: `${inv.invoice_number} ${inv.client.business ?? inv.client.email}: ${label}`, decision: ev.decision === "approve" ? "approved" : "allowed", reason: `${ev.decision === "approve" ? "You approved this. " : ""}${decided.resolution === resolution ? decided.why : `chosen by you (policy would propose ${decided.resolution})`}. ${ev.reason}`, rule: result.rule, input: { invoice_id: inv.id, resolution }, output: detail.pack ? { ...detail, pack: `${String(detail.pack).length} chars` } : detail });
+      return { invoice_id: inv.id, invoice_number: inv.invoice_number, client: inv.client.business ?? inv.client.email, resolution: result, ...detail };
+    },
+  }),
+
+  get_statement_of_account: tool({
+    description: "Statement of account for one client (by business name, person name, email or invoice number): every open invoice with aging buckets, one total, pay links, promises and reminders, plus recently settled invoices, as Markdown. Read-only.",
+    inputSchema: z.object({ query: z.string().min(1) }),
+    execute: async ({ query }) => {
+      const q = query.trim().toLowerCase();
+      const [invoices, transactions] = await Promise.all([getInvoices(), getTransactions()]);
+      const words = q.split(/\s+/).filter(Boolean);
+      const hit = invoices.find((i) => {
+        const hay = [i.client.business, i.client.given_name, i.client.surname, i.client.email, i.invoice_number].filter(Boolean).join(" ").toLowerCase();
+        return words.length > 0 && words.every((w) => hay.includes(w));
+      });
+      if (!hit) return { error: `No client matched "${query}".` };
+      const st = buildStatement(hit.client.email, { invoices, transactions, now: new Date(), merchant: merchantProfile(), policy: getStore().policy });
+      return st ?? { error: `No invoices for ${hit.client.email}.` };
     },
   }),
 
