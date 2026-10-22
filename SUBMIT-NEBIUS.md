@@ -48,7 +48,7 @@ Chaser was built in October 2026 for the PayPal AI Hackathon. During the Nebius 
 **Links**
 - Repo: https://github.com/vigohan95/chaser (MIT)
 - Demo: https://chaser-six.vercel.app
-- Video: (YouTube, TODO)
+- Video: https://youtu.be/vupkqPTKles (unlisted, 2:16, uploaded 2026-10-22; produced by scripts/make_video_nebius.py)
 
 ## B. Video plan (<= 3 min, YouTube, no copyrighted music) - produced by `scripts/make_video_nebius.py`
 1. Title card: Chaser on Nemotron. 3 s
