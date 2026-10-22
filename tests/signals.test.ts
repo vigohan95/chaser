@@ -68,7 +68,7 @@ describe("after-final proposals carry payer signals", () => {
     delete process.env.TAVILY_API_KEY;
     process.env.MOCK_PAYPAL = "1";
     const { localTools } = await import("../src/lib/agent/local-tools");
-    const r = (await localTools.propose_after_final.execute!({}, { toolCallId: "t", messages: [] })) as { proposals: Array<{ client: string; signals: { source: string; risk: string; evidence: unknown[] } }> };
+    const r = (await localTools.propose_after_final.execute!({}, { toolCallId: "t", messages: [] } as never)) as { proposals: Array<{ client: string; signals: { source: string; risk: string; evidence: unknown[] } }> };
     for (const p of r.proposals) {
       expect(p.signals.source).toBe("demo");
       expect(["distress", "change", "growth", "none", "unknown"]).toContain(p.signals.risk);
