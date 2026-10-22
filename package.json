@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
+    "nebius:smoke": "tsx scripts/nebius-smoke.ts",
+    "nebius:signals": "tsx scripts/nebius-signals-smoke.ts",
     "sandbox:check": "tsx scripts/sandbox-check.ts",
     "sandbox:shots": "python scripts/sandbox_shots.py",
     "bench:recon": "tsx scripts/bench-recon.ts",

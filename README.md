@@ -192,7 +192,8 @@ Via [`@paypal/agent-toolkit`](https://www.npmjs.com/package/@paypal/agent-toolki
 ### AI
 
 - **Agent loop**: Vercel AI SDK 7 `streamText` with `stopWhen: stepCountIs(14)`, tools, and the `toolApproval` hook for human-in-the-loop; UI with `@ai-sdk/react` `useChat`, typed tool parts and `addToolApprovalResponse`.
-- **Models (all free tiers, no card)**: Google AI Studio Gemini (`@ai-sdk/google`), Groq (`@ai-sdk/groq`), Nebius Token Factory NVIDIA Nemotron (`@ai-sdk/openai-compatible`). Pick one by setting its key.
+- **Models**: Nebius Token Factory NVIDIA Nemotron (`@ai-sdk/openai-compatible`, default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`), Google AI Studio Gemini (`@ai-sdk/google`), Groq (`@ai-sdk/groq`). Set a key; with several keys `LLM_PROVIDER=nebius|google|groq` picks one. The drawer shows the exact model id that answered.
+- **Payer signals** (`src/lib/agent/signals.ts`): before a final notice, a settlement or a hand-off the agent calls `check_payer_signals`, a Tavily news search (last month, 5 results, 1 credit) classified into distress / change / growth / none with the articles as evidence; `propose_after_final` attaches the same signal to every proposal. Without `TAVILY_API_KEY` (or with `MOCK_SIGNALS=1`) a fixed demo set is returned and labelled `source: "demo"`, so nothing is ever passed off as real news.
 - **Daily caps for a hosted key**: `/api/agent` keeps per-visitor and global per-day buckets (`AGENT_LLM_RUNS_PER_IP_PER_DAY`, default 20; `AGENT_LLM_RUNS_PER_DAY`, default 300; UTC days, per instance). Past the cap the request runs on the keyless planner and the drawer says so.
 - **Keyless planner**: `src/lib/llm/mock-model.ts` is a `LanguageModelV3` that plans tool calls with rules instead of weights. It follows the same playbook as the system prompt, so the full product (agent loop, policy gate, approval cards, ledger) runs with zero API keys and the end-to-end tests run the real SDK loop.
 - **Deterministic helpers the model calls**: `match_payments`, `propose_collections`, `propose_after_final`, `resolve_after_final`, `classify_client_reply`, `record_promise`, `get_statement_of_account`, `draft_dispute_evidence`, `submit_dispute_evidence`, `lookup_customer` (with the payer's history), `summarize_receivables`, `set_chase_override`. Predictions, cadence, matching and classification are done in code with named rules; the model acts on structured results and writes the prose. Small models behave, and nothing about money is left to a guess.
@@ -291,6 +292,22 @@ python scripts/make_video.py              # demo video: Playwright drives the li
 | **Best Use of AG Grid** | The grid is where the human works: predicted pay date, risk, next action with its rule, promise and viewed chips; the match review edits what the agent proposed before it touches PayPal; the ledger makes policy decisions inspectable; inline policy edits per invoice; selection drives agent actions and the detail panel. |
 | **Best Use of Agentic Commerce** | A seller-side agent that transacts on PayPal (invoices, reminders, re-deliveries, payment and refund records, settlement invoices, write-offs, dispute responses, tracking, subscriptions) within user-defined limits, and honours a negotiated term (a promise to pay) the way a human collector would. |
 | **Best Demo Delivery** | 3-minute end-to-end story (`SUBMIT.md`); everything reproduces locally with `npm run dev` and no keys; the hosted demo shows every feature on demo data and the README says exactly what ran on the sandbox. |
+
+## Nebius x NVIDIA Global AI Hackathon: what Nemotron does here, and what changed
+
+Entered in the **Best Apps and Agents** track. The hosted demo runs on **Nebius Token Factory** with **NVIDIA Nemotron 3 Nano (30B-A3B)** as the planner: every agent turn is an OpenAI-compatible chat completion with tools against `api.tokenfactory.nebius.com`, and the model's `reasoning` field is returned alongside its tool calls (about 200 reasoning tokens per turn on the smoke run).
+
+Where the model earns its keep is the part that cannot be a rule: reading the receivables state, picking the next tool, and writing the reminder in the right tone. Everything about money (matching, cadence, predictions, policy) is deterministic code the model is handed, which is why a 30B model behaves here.
+
+Measured on the demo data (`npm run nebius:smoke`, 2026-10-22): one chase turn = 2 steps, `propose_collections` then a 7-invoice plan, 27 s end to end; one after-final turn on a Chapter 11 client = 116 s with the policy gate deciding hand-off and asking for approval. Costs stayed inside Token Factory's $1 trial credit for the whole build.
+
+Changed during the submission period (the project existed before it, for the PayPal AI Hackathon):
+
+- **Nemotron as the default planner** with `LLM_PROVIDER`, a true model label in the UI and ledger, and a smoke script that proves a real turn.
+- **Payer signals with Tavily**: the news check before escalation (`check_payer_signals`), auto-attached to every after-final proposal, with a demo fallback that says it is a demo. A firm notice to a client that filed for Chapter 11 yesterday is the wrong move; now the agent knows.
+- Tests 119 -> 129; provider selection and signal classification are unit-tested, the Tavily call is tested against a fake fetch.
+
+Run it yourself: set `NEBIUS_API_KEY` (and optionally `TAVILY_API_KEY`), `LLM_PROVIDER=nebius`, then `npm run dev`; or `npm run nebius:smoke` for one real turn in the terminal.
 
 ## Security and scope
 
