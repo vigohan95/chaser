@@ -295,17 +295,18 @@ python scripts/make_video.py              # demo video: Playwright drives the li
 
 ## Nebius x NVIDIA Global AI Hackathon: what Nemotron does here, and what changed
 
-Entered in the **Best Apps and Agents** track. The hosted demo runs on **Nebius Token Factory** with **NVIDIA Nemotron 3 Nano (30B-A3B)** as the planner: every agent turn is an OpenAI-compatible chat completion with tools against `api.tokenfactory.nebius.com`, and the model's `reasoning` field is returned alongside its tool calls (about 200 reasoning tokens per turn on the smoke run).
+Entered in the **Best Apps and Agents** track. The hosted demo runs on **Nebius Token Factory** with **NVIDIA Nemotron 3 Nano (30B-A3B)** as the planner: every agent turn is an OpenAI-compatible chat completion with tools against `api.tokenfactory.nebius.com`. Nemotron's thinking is off by default (the provider's fetch injects `chat_template_kwargs.enable_thinking=false`); `NEBIUS_THINKING=1` turns it back on and the `reasoning` field then streams alongside the tool calls.
 
 Where the model earns its keep is the part that cannot be a rule: reading the receivables state, picking the next tool, and writing the reminder in the right tone. Everything about money (matching, cadence, predictions, policy) is deterministic code the model is handed, which is why a 30B model behaves here.
 
-Measured on the demo data (`npm run nebius:smoke`, 2026-10-22): one chase turn = 2 steps, `propose_collections` then a 7-invoice plan, 27 s end to end; one after-final turn on a Chapter 11 client = 116 s with the policy gate deciding hand-off and asking for approval. Costs stayed inside Token Factory's $1 trial credit for the whole build.
+Measured on the demo data, 2026-10-22, thinking off: one chase turn (`npm run nebius:smoke`) = 2 steps, `propose_collections` then the plan, 4.9 s end to end; one after-final turn (`npm run nebius:signals`) = `check_payer_signals` + `propose_after_final`, Chapter 11 on the demo client -> hand-off, 29 s. The same two turns with thinking on took 27 s and 116 s, and in the hosted chat route (60 s budget) the chase turn streamed reasoning until the budget ran out and never answered; that measurement is why the default flipped. Costs stayed inside Token Factory's $1 trial credit for the whole build.
 
 Changed during the submission period (the project existed before it, for the PayPal AI Hackathon):
 
 - **Nemotron as the default planner** with `LLM_PROVIDER`, a true model label in the UI and ledger, and a smoke script that proves a real turn.
-- **Payer signals with Tavily**: the news check before escalation (`check_payer_signals`), auto-attached to every after-final proposal, with a demo fallback that says it is a demo. A firm notice to a client that filed for Chapter 11 yesterday is the wrong move; now the agent knows.
-- Tests 119 -> 129; provider selection and signal classification are unit-tested, the Tavily call is tested against a fake fetch.
+- **The thinking switch**: Nemotron 3 thinks unless the chat template is told not to; for a 14-tool loop behind a 60 s route that was the difference between a 5 s turn and a timeout. Off by default, `NEBIUS_THINKING=1` to compare.
+- **Payer signals with Tavily**: the news check before escalation (`check_payer_signals`), auto-attached to every after-final proposal and written to the audit log per client, with a demo fallback that says it is a demo. A firm notice to a client that filed for Chapter 11 yesterday is the wrong move; now the agent knows.
+- Tests 119 -> 132; provider selection, the thinking switch and signal classification are unit-tested, the Tavily call is tested against a fake fetch.
 
 Run it yourself: set `NEBIUS_API_KEY` (and optionally `TAVILY_API_KEY`), `LLM_PROVIDER=nebius`, then `npm run dev`; or `npm run nebius:smoke` for one real turn in the terminal.
 
