@@ -17,6 +17,7 @@ import { classifyReply, describePromise, promiseStatus } from "./promise";
 import { decideAfterFinal, planAfterFinal } from "./after-final";
 import { buildHandoffPack, buildStatement } from "./statement";
 import { matchTransactions } from "./reconcile";
+import { payerSignals } from "./signals";
 
 async function evidenceFor(dispute_id: string) {
   const disputes = await getDisputes();
@@ -237,7 +238,21 @@ export const localTools = {
       const store = getStore();
       let invoices = await getInvoices();
       if (invoice_ids?.length) invoices = invoices.filter((i) => invoice_ids.includes(i.id) || invoice_ids.includes(i.invoice_number));
-      return { now: new Date().toISOString(), policy: store.policy.collections.afterFinal, proposals: planAfterFinal(invoices, store.policy, new Date()) };
+      const proposals = planAfterFinal(invoices, store.policy, new Date());
+      // Payer signals ride along: one search per client, attached to every proposal for that client.
+      const byClient = new Map<string, Awaited<ReturnType<typeof payerSignals>>>();
+      for (const p of proposals) {
+        const key = p.email.toLowerCase();
+        if (!byClient.has(key)) {
+          const inv = invoices.find((i) => i.client.email.toLowerCase() === key);
+          byClient.set(key, await payerSignals({ business: inv?.client.business, name: p.client, email: p.email }));
+        }
+      }
+      const enriched = proposals.map((p) => {
+        const sig = byClient.get(p.email.toLowerCase())!;
+        return { ...p, signals: { source: sig.source, risk: sig.risk, recommendation: sig.recommendation, evidence: sig.evidence.map((e) => ({ title: e.title, url: e.url, published_date: e.published_date })) } };
+      });
+      return { now: new Date().toISOString(), policy: store.policy.collections.afterFinal, proposals: enriched };
     },
   }),
 
@@ -312,6 +327,16 @@ export const localTools = {
       if (!hit) return { error: `No client matched "${query}".` };
       const st = buildStatement(hit.client.email, { invoices, transactions, now: new Date(), merchant: merchantProfile(), policy: getStore().policy });
       return st ?? { error: `No invoices for ${hit.client.email}.` };
+    },
+  }),
+
+  check_payer_signals: tool({
+    description: "What the open web says about a client right now (bankruptcy, layoffs, acquisition, funding) from a news search, with the articles as evidence and a recommendation. Call it before a final notice, a settlement offer or a hand-off, and when a client goes quiet. Uses Tavily when TAVILY_API_KEY is set; otherwise returns a labelled demo result.",
+    inputSchema: z.object({ business: z.string().optional().describe("Client business name"), email: z.string().optional().describe("Client email; a company domain sharpens the search"), name: z.string().optional().describe("Contact name, only if there is no business name") }),
+    execute: async (input) => {
+      const result = await payerSignals(input);
+      audit({ actor: "agent", tool: "check_payer_signals", action: `${result.query || "(no query)"}: ${result.risk} (${result.source})`, decision: "info", reason: result.recommendation, input, output: { risk: result.risk, evidence: result.evidence.length } });
+      return result;
     },
   }),
 
