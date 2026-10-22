@@ -57,6 +57,17 @@ describe("payer signals", () => {
     expect(r.recommendation).toMatch(/none mention the client/);
   });
 
+  it("for a demo client with a key: demo story + a live probe that is reported, not classified", async () => {
+    let calls = 0;
+    const fetchImpl = (async () => { calls++; return new Response(JSON.stringify({ results: [{ title: "Coyote vs. Acme Corp review", url: "u", content: "lawsuit comedy" }] }), { status: 200 }); }) as typeof fetch;
+    const r = await payerSignals({ business: "Acme Corp", email: "ap@acme.com", demoClient: true }, { TAVILY_API_KEY: "tvly-test" }, fetchImpl);
+    expect(calls).toBe(1);
+    expect(r.source).toBe("demo");
+    expect(r.risk).toBe("distress");
+    expect(r.evidence[0].url).toMatch(/demo\.invalid/);
+    expect(r.live_probe).toMatchObject({ results: 1, mentioning_client: 1 });
+  });
+
   it("degrades to unknown when the search fails", async () => {
     const fetchImpl = (async () => new Response("nope", { status: 432 })) as typeof fetch;
     const r = await payerSignals({ business: "Acme Corp" }, { TAVILY_API_KEY: "tvly-test" }, fetchImpl);

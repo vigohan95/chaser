@@ -27,6 +27,12 @@ export interface PayerSignals {
   evidence: SignalEvidence[];
   recommendation: string;
   checked_at: string;
+  /**
+   * Present when the client is a demo (fictional) company and a Tavily key is set: the live search still ran,
+   * so the ledger shows a real call, but its hits are reported separately and never classified as the client's
+   * news, because a fictional "Acme Corp" matches film reviews and unrelated companies.
+   */
+  live_probe?: { query: string; results: number; mentioning_client: number; note: string };
 }
 
 const DISTRESS = ["bankrupt", "bankruptcy", "chapter 11", "chapter 7", "insolven", "administration", "receivership", "liquidat", "shuts down", "shutting down", "ceases operations", "winding down", "layoffs", "lays off", "laid off", "missed payroll", "default", "lawsuit", "sued", "fraud", "sec charges"];
@@ -119,7 +125,7 @@ export function signalsEnabled(env: Record<string, string | undefined> = process
 }
 
 export async function payerSignals(
-  input: { business?: string; name?: string; email?: string },
+  input: { business?: string; name?: string; email?: string; demoClient?: boolean },
   env: Record<string, string | undefined> = process.env,
   fetchImpl?: typeof fetch,
 ): Promise<PayerSignals> {
@@ -127,6 +133,17 @@ export async function payerSignals(
   const checked_at = new Date().toISOString();
   if (!query) return { query, source: "demo", risk: "unknown", evidence: [], recommendation: "No business name or company domain to search for.", checked_at };
   if (!signalsEnabled(env)) return { query, source: "demo", checked_at, ...classifySignals(demoResults(query)) };
+  if (input.demoClient) {
+    // Fictional client: the demo set carries the story; the live search runs and is reported, not classified.
+    const base = { query, source: "demo" as const, checked_at, ...classifySignals(demoResults(query)) };
+    try {
+      const results = await tavilySearch(query, { apiKey: env.TAVILY_API_KEY!, fetchImpl });
+      const mentioning = aboutClient(results, input.business || input.name).length;
+      return { ...base, live_probe: { query, results: results.length, mentioning_client: mentioning, note: "Demo client is fictional; live hits are not about it and were not classified. Real clients get the live classification." } };
+    } catch (e) {
+      return { ...base, live_probe: { query, results: 0, mentioning_client: 0, note: `Live search failed (${e instanceof Error ? e.message : String(e)}).` } };
+    }
+  }
   try {
     const results = await tavilySearch(query, { apiKey: env.TAVILY_API_KEY!, fetchImpl });
     const relevant = aboutClient(results, input.business || input.name);

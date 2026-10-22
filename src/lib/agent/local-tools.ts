@@ -245,12 +245,12 @@ export const localTools = {
         const key = p.email.toLowerCase();
         if (!byClient.has(key)) {
           const inv = invoices.find((i) => i.client.email.toLowerCase() === key);
-          byClient.set(key, await payerSignals({ business: inv?.client.business, name: p.client, email: p.email }));
+          byClient.set(key, await payerSignals({ business: inv?.client.business, name: p.client, email: p.email, demoClient: currentMode() === "mock" }));
         }
       }
       const enriched = proposals.map((p) => {
         const sig = byClient.get(p.email.toLowerCase())!;
-        return { ...p, signals: { source: sig.source, risk: sig.risk, recommendation: sig.recommendation, evidence: sig.evidence.map((e) => ({ title: e.title, url: e.url, published_date: e.published_date })) } };
+        return { ...p, signals: { source: sig.source, risk: sig.risk, recommendation: sig.recommendation, evidence: sig.evidence.map((e) => ({ title: e.title, url: e.url, published_date: e.published_date })), live_probe: sig.live_probe } };
       });
       return { now: new Date().toISOString(), policy: store.policy.collections.afterFinal, proposals: enriched };
     },
@@ -334,8 +334,8 @@ export const localTools = {
     description: "What the open web says about a client right now (bankruptcy, layoffs, acquisition, funding) from a news search, with the articles as evidence and a recommendation. Call it before a final notice, a settlement offer or a hand-off, and when a client goes quiet. Uses Tavily when TAVILY_API_KEY is set; otherwise returns a labelled demo result.",
     inputSchema: z.object({ business: z.string().optional().describe("Client business name"), email: z.string().optional().describe("Client email; a company domain sharpens the search"), name: z.string().optional().describe("Contact name, only if there is no business name") }),
     execute: async (input) => {
-      const result = await payerSignals(input);
-      audit({ actor: "agent", tool: "check_payer_signals", action: `${result.query || "(no query)"}: ${result.risk} (${result.source})`, decision: "info", reason: result.recommendation, input, output: { risk: result.risk, evidence: result.evidence.length } });
+      const result = await payerSignals({ ...input, demoClient: currentMode() === "mock" });
+      audit({ actor: "agent", tool: "check_payer_signals", action: `${result.query || "(no query)"}: ${result.risk} (${result.source}${result.live_probe ? `, live probe ${result.live_probe.results} hits` : ""})`, decision: "info", reason: result.recommendation, input, output: { risk: result.risk, evidence: result.evidence.length, live_probe: result.live_probe } });
       return result;
     },
   }),
