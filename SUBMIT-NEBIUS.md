@@ -58,6 +58,16 @@ Chaser was built in October 2026 for the PayPal AI Hackathon. During the Nebius 
 5. "One real turn from the terminal": slide with the verbatim `npm run nebius:smoke` output (model id, steps, tools, 4.9 s) and the thinking switch. ~25 s
 6. "What changed": closing slide + end card (repo, live demo). ~25 s
 
+YouTube upload copy (unlisted is fine; Devpost only needs the link):
+- Title: Chaser on Nemotron: an AR agent that reads the news before it escalates (Nebius x NVIDIA hackathon demo)
+- Description:
+  Chaser is an accounts-receivable agent on PayPal that works inside a policy you write down. For the Nebius x NVIDIA Global AI Hackathon the planner runs on NVIDIA Nemotron 3 Nano (30B-A3B) served by Nebius Token Factory, and a new payer-signals step (Tavily news search) runs before any final notice, settlement or hand-off.
+  0:00 Title · 0:03 Nemotron in the loop (model label, one chase turn) · 0:32 After the final notice: read the news first (Chapter 11 on the demo client -> hand-off, approval card) · 1:05 On the record (audit timeline) · 1:24 One real turn from the terminal (npm run nebius:smoke, thinking switch) · 1:48 What changed
+  Live demo (demo data, no sign-in): https://chaser-six.vercel.app
+  Source (MIT): https://github.com/vigohan95/chaser
+  Demo data only; no real money moves. Narration is synthetic (edge-tts). No music.
+- Tags: nemotron, nebius, token factory, ai agent, accounts receivable, paypal, tavily, vercel ai sdk, hackathon
+
 ## C. User steps
 - Vercel chaser project: add `NEBIUS_API_KEY` (dialog prefilled), optional `TAVILY_API_KEY`; `LLM_PROVIDER=nebius` already added; then Deployments -> Redeploy.
 - Devpost edit page sits behind a Cloudflare check: open the tab once so Claude can fill the form.

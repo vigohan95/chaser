@@ -73,7 +73,10 @@ body {
 .prose-chat a {
   color: var(--accent);
   text-decoration: underline;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
+.prose-chat { overflow-wrap: anywhere; }
 /* Assistant replies are Markdown (GFM): compact spacing for a narrow drawer; tables scroll instead of wrapping. */
 .prose-chat p, .prose-chat ul, .prose-chat ol, .prose-chat pre, .prose-chat table { margin: 0.35rem 0; }
 .prose-chat p:first-child, .prose-chat ul:first-child, .prose-chat table:first-child { margin-top: 0; }

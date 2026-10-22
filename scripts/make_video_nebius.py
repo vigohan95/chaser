@@ -286,12 +286,18 @@ def record(work: Path, out: Path, url: str, narration: list[float], headed: bool
             raise SystemExit("no approval card after the after-final review: the hand-off should be 'ask' in the policy")
         pc = chip("propose after final")
         if pc.count():
+            pc.scroll_into_view_if_needed()
+            rec.pause(0.4)
             rec.click(pc, settle=0.6)  # expands input/output JSON (signals per proposal)
-            pre = page.locator("aside pre").last
-            pre.evaluate("el => { const t = el.textContent || ''; const i = t.indexOf('Chapter 11'); if (i > 0) el.scrollTop = Math.max(0, el.scrollHeight * (i / t.length) - 70); }")
-            rec.hover(pre, dy=-30, dur=0.5)
-            rec.pause(2.2)
-            rec.still(stills, "03-signals-output")
+            pre = page.locator("aside pre").filter(has_text="Chapter 11").last
+            try:
+                pre.wait_for(timeout=5_000)
+                pre.evaluate("el => { const t = el.textContent || ''; const i = t.indexOf('Chapter 11'); if (i > 0) el.scrollTop = Math.max(0, el.scrollHeight * (i / t.length) - 70); }")
+                rec.hover(pre, dy=-30, dur=0.5)
+                rec.pause(2.2)
+                rec.still(stills, "03-signals-output")
+            except Exception as e:  # the chip did not open (scrolled away); the audit tab shows the same signals
+                print(f"  (signals JSON not shown: {e.__class__.__name__})")
         nw = page.locator("aside .border-amber-400:has-text('INV-0026')").first
         card = nw if nw.count() else card
         card.scroll_into_view_if_needed()
