@@ -69,6 +69,5 @@ YouTube upload copy (unlisted is fine; Devpost only needs the link):
 - Tags: nemotron, nebius, token factory, ai agent, accounts receivable, paypal, tavily, vercel ai sdk, hackathon
 
 ## C. User steps
-- Vercel chaser project: add `NEBIUS_API_KEY` (dialog prefilled), optional `TAVILY_API_KEY`; `LLM_PROVIDER=nebius` already added; then Deployments -> Redeploy.
-- Devpost edit page sits behind a Cloudflare check: open the tab once so Claude can fill the form.
-- Final: click Submit on Devpost before 2026-10-30 10:00 PDT.
+- Done by Claude on 2026-10-22: Vercel env, Devpost project overview / details (About, tags, links, 4 gallery stills with captions, video URL) and the additional-info questionnaire; video uploaded to YouTube (unlisted) and verified by Devpost.
+- Remaining (one click, the browser automation is not allowed to accept terms for you): open https://devpost.com/submit-to/30790-nebius-x-nvidia-global-ai-hackathon/manage/submissions/1253176-chaser/finalization , tick "I ... agree to the Official Rules", click **Submit project**. Deadline 2026-10-30 10:00 PDT; the project stays editable after submitting.
