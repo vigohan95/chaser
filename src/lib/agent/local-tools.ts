@@ -232,8 +232,8 @@ export const localTools = {
   }),
 
   propose_after_final: tool({
-    description: "Apply collections.afterFinal to every open invoice whose final notice is at least waitDays old: proposes write_off (balance under writeOffUnder), settlement (a discounted replacement invoice) or handoff (a pack with the statement of account, chase history and evidence). Read-only; then call resolve_after_final per proposal (the policy decides what needs approval).",
-    inputSchema: z.object({ invoice_ids: z.array(z.string()).optional() }),
+    description: "Apply collections.afterFinal to every open invoice whose final notice is at least waitDays old: proposes write_off (balance under writeOffUnder), settlement (a discounted replacement invoice) or handoff (a pack with the statement of account, chase history and evidence), each with the client's payer signals (news). Call it with no arguments to review all open invoices; pass invoice_ids only when the user named specific invoices. Read-only; then call resolve_after_final per proposal (the policy decides what needs approval).",
+    inputSchema: z.object({ invoice_ids: z.array(z.string()).optional().describe("Leave out to review every open invoice; only the invoices the user named otherwise") }),
     execute: async ({ invoice_ids }) => {
       const store = getStore();
       let invoices = await getInvoices();

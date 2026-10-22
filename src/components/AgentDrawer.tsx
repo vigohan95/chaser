@@ -1,5 +1,7 @@
 "use client";
 
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
@@ -196,9 +198,15 @@ export default function AgentDrawer({ chat, llm, pending }: { chat: Helpers; llm
               <div className="space-y-2">
                 {m.parts.map((part, idx) => {
                   if (part.type === "text") {
-                    return (
+                    return m.role === "user" ? (
                       <div key={idx} className="prose-chat whitespace-pre-wrap">
                         <Linkify text={part.text} />
+                      </div>
+                    ) : (
+                      <div key={idx} className="prose-chat">
+                        <Markdown remarkPlugins={[remarkGfm]} components={{ a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer">{children}</a> }}>
+                          {part.text}
+                        </Markdown>
                       </div>
                     );
                   }
