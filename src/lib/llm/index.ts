@@ -41,6 +41,34 @@ export function activeModelId(env: Env = process.env): string | undefined {
   return env.NEBIUS_MODEL ?? NEBIUS_DEFAULT_MODEL;
 }
 
+/**
+ * Nemotron 3 thinks before it answers unless the chat template is told not to. On the demo data a single chase
+ * turn with thinking on streamed ~60 s of reasoning deltas and ran into the route's 60 s budget; with thinking
+ * off the same tool call comes back in under 2 s (measured on Token Factory, 2026-10-22, see README). Default is
+ * thinking off; NEBIUS_THINKING=1 turns it back on. Only /chat/completions bodies are touched.
+ */
+export function withNebiusThinking(body: string, env: Record<string, string | undefined> = process.env): string {
+  if (env.NEBIUS_THINKING === "1") return body;
+  try {
+    const json = JSON.parse(body) as Record<string, unknown>;
+    if (!json || typeof json !== "object" || Array.isArray(json)) return body;
+    const kwargs = (json.chat_template_kwargs && typeof json.chat_template_kwargs === "object" ? json.chat_template_kwargs : {}) as Record<string, unknown>;
+    return JSON.stringify({ ...json, chat_template_kwargs: { ...kwargs, enable_thinking: false } });
+  } catch {
+    return body;
+  }
+}
+
+function nebiusFetch(): typeof fetch {
+  return async (input, init) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (init && typeof init.body === "string" && url.includes("/chat/completions")) {
+      return fetch(input, { ...init, body: withNebiusThinking(init.body) });
+    }
+    return fetch(input, init);
+  };
+}
+
 export function getModel(opts: { forceMock?: boolean } = {}): LanguageModel {
   if (opts.forceMock || isMockLlm()) return new MockPlannerModel();
   const provider = activeProvider();
@@ -58,6 +86,7 @@ export function getModel(opts: { forceMock?: boolean } = {}): LanguageModel {
       name: "nebius",
       baseURL: process.env.NEBIUS_BASE_URL ?? NEBIUS_DEFAULT_BASE_URL,
       apiKey: process.env.NEBIUS_API_KEY,
+      fetch: nebiusFetch(),
     });
     return nebius(modelId!);
   }

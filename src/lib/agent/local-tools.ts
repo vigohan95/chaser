@@ -245,7 +245,10 @@ export const localTools = {
         const key = p.email.toLowerCase();
         if (!byClient.has(key)) {
           const inv = invoices.find((i) => i.client.email.toLowerCase() === key);
-          byClient.set(key, await payerSignals({ business: inv?.client.business, name: p.client, email: p.email, demoClient: currentMode() === "mock" }));
+          const sig = await payerSignals({ business: inv?.client.business, name: p.client, email: p.email, demoClient: currentMode() === "mock" });
+          byClient.set(key, sig);
+          // The news check is part of the decision, so it is on the record like any other check.
+          audit({ actor: "agent", tool: "propose_after_final", action: `Payer signals for ${inv?.client.business ?? p.client}: ${sig.risk} (${sig.source}${sig.live_probe ? `, live probe ${sig.live_probe.results} hits` : ""})`, decision: "info", reason: sig.recommendation, input: { query: sig.query }, output: { risk: sig.risk, evidence: sig.evidence.map((e) => e.title), live_probe: sig.live_probe } });
         }
       }
       const enriched = proposals.map((p) => {

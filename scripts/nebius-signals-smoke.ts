@@ -6,7 +6,7 @@ process.env.MOCK_LLM = "0";
 async function main() {
   const { runOnce } = await import("../src/lib/agent/run");
   const t0 = Date.now();
-  const r = await runOnce("Acme Corp's invoice INV-0001 is at the final-notice stage. Decide what to do next and explain.", { unattended: true });
+  const r = await runOnce(process.argv[2] ?? "Run the after-final review: which invoices are past their final notice, what does the policy propose for each, and what does the news say about those clients? Carry out what you can.", { unattended: true });
   console.log("tools:", r.toolCalls.join(", "));
   console.log("reply:", r.text.slice(0, 900));
   console.log("ms:", Date.now() - t0);

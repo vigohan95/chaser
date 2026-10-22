@@ -99,7 +99,8 @@ export async function tavilySearch(query: string, opts: { apiKey: string; maxRes
 export function demoResults(query: string, today = new Date().toISOString().slice(0, 10)): SearchResult[] {
   const q = query.toLowerCase();
   if (q.includes("acme")) return [{ title: "Acme Corp files for Chapter 11 protection", url: "https://demo.invalid/acme-chapter-11", content: "Acme Corp filed for Chapter 11 bankruptcy on Monday after missing payroll; a creditors meeting is set for next month.", published_date: today }];
-  if (q.includes("bluebird")) return [{ title: "Bluebird Studio acquired by Northwind Group", url: "https://demo.invalid/bluebird-acquired", content: "Northwind Group completed its acquisition of Bluebird Studio; finance operations move to Northwind's shared services team.", published_date: today }];
+  if (q.includes("bluebird")) return [{ title: "Bluebird Studio acquired by Harborline Group", url: "https://demo.invalid/bluebird-acquired", content: "Harborline Group completed its acquisition of Bluebird Studio; finance operations move to Harborline's shared services team.", published_date: today }];
+  if (q.includes("northwind")) return [{ title: "Northwind Traders files for Chapter 11 protection", url: "https://demo.invalid/northwind-chapter-11", content: "Northwind Traders filed for Chapter 11 bankruptcy on Monday after missing payroll twice; trade creditors are asked to file claims with the court.", published_date: today }];
   if (q.includes("vireo")) return [{ title: "Vireo Labs raises $12M Series A", url: "https://demo.invalid/vireo-series-a", content: "Vireo Labs raised a $12M Series A to expand its platform and is hiring across engineering.", published_date: today }];
   return [];
 }

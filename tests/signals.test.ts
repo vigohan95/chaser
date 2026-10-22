@@ -30,6 +30,8 @@ describe("payer signals", () => {
     const none = await payerSignals({ business: "Harbor & Finch LLP" }, {});
     expect(none.risk).toBe("none");
     expect(demoResults("vireo")[0].title).toMatch(/Series A/);
+    expect(classifySignals(demoResults('"Northwind Traders" northwind.example')).risk).toBe("distress");
+    expect(classifySignals(demoResults('"Bluebird Studio"')).risk).toBe("change");
   });
 
   it("calls Tavily with the news topic and classifies what comes back", async () => {

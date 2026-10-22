@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeModelId, activeProvider, NEBIUS_DEFAULT_MODEL } from "../src/lib/llm";
+import { activeModelId, activeProvider, NEBIUS_DEFAULT_MODEL, withNebiusThinking } from "../src/lib/llm";
 
 describe("provider selection", () => {
   it("falls back to the first key in google > groq > nebius order", () => {
@@ -18,5 +18,12 @@ describe("provider selection", () => {
     expect(activeModelId({ NEBIUS_API_KEY: "n", NEBIUS_MODEL: "nvidia/nemotron-3-super-120b-a12b" })).toBe("nvidia/nemotron-3-super-120b-a12b");
     expect(activeModelId({ NEBIUS_API_KEY: "n", LLM_MODEL: "x/y" })).toBe("x/y");
     expect(activeModelId({})).toBeUndefined();
+  });
+  it("turns Nemotron thinking off in the chat body unless NEBIUS_THINKING=1", () => {
+    const body = JSON.stringify({ model: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B", messages: [], stream: true });
+    expect(JSON.parse(withNebiusThinking(body, {}))).toMatchObject({ model: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B", stream: true, chat_template_kwargs: { enable_thinking: false } });
+    expect(JSON.parse(withNebiusThinking(JSON.stringify({ chat_template_kwargs: { x: 1 } }), {}))).toEqual({ chat_template_kwargs: { x: 1, enable_thinking: false } });
+    expect(withNebiusThinking(body, { NEBIUS_THINKING: "1" })).toBe(body);
+    expect(withNebiusThinking("not json", {})).toBe("not json");
   });
 });
