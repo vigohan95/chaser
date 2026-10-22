@@ -102,7 +102,16 @@ const FREEMAIL = /gmail|outlook|yahoo|hotmail|icloud|proton/i;
 
 export function signalsQuery(input: { business?: string; name?: string; email?: string }): string {
   const domain = input.email?.split("@")[1];
-  return [input.business || input.name, domain && !FREEMAIL.test(domain) ? domain : undefined].filter(Boolean).join(" ");
+  const subject = input.business || input.name;
+  // Quote the name so a generic word ("Acme") does not pull in film reviews and unrelated companies.
+  return [subject ? `"${subject}"` : undefined, domain && !FREEMAIL.test(domain) ? domain : undefined].filter(Boolean).join(" ");
+}
+
+/** Keep only articles that actually mention the client; a news search for a short name returns plenty that do not. */
+export function aboutClient(results: SearchResult[], subject: string | undefined): SearchResult[] {
+  if (!subject) return results;
+  const needle = subject.toLowerCase();
+  return results.filter((r) => `${r.title} ${r.content}`.toLowerCase().includes(needle));
 }
 
 export function signalsEnabled(env: Record<string, string | undefined> = process.env): boolean {
@@ -120,7 +129,10 @@ export async function payerSignals(
   if (!signalsEnabled(env)) return { query, source: "demo", checked_at, ...classifySignals(demoResults(query)) };
   try {
     const results = await tavilySearch(query, { apiKey: env.TAVILY_API_KEY!, fetchImpl });
-    return { query, source: "tavily", checked_at, ...classifySignals(results) };
+    const relevant = aboutClient(results, input.business || input.name);
+    const classified = classifySignals(relevant);
+    if (relevant.length === 0 && results.length > 0) classified.recommendation = "Search returned articles but none mention the client by name. Treat as no signal; fall back on payment history.";
+    return { query, source: "tavily", checked_at, ...classified };
   } catch (e) {
     return { query, source: "tavily", risk: "unknown", evidence: [], recommendation: `Search failed (${e instanceof Error ? e.message : String(e)}); fall back on payment history.`, checked_at };
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifySignals, demoResults, payerSignals, signalsQuery, tavilySearch } from "../src/lib/agent/signals";
+import { aboutClient, classifySignals, demoResults, payerSignals, signalsQuery, tavilySearch } from "../src/lib/agent/signals";
 
 describe("payer signals", () => {
   it("classifies distress over change over growth", () => {
@@ -16,9 +16,9 @@ describe("payer signals", () => {
   });
 
   it("builds the query from business name and company domain, skipping freemail", () => {
-    expect(signalsQuery({ business: "Acme Corp", email: "ap@acme.com" })).toBe("Acme Corp acme.com");
-    expect(signalsQuery({ business: "Acme Corp", email: "joe@gmail.com" })).toBe("Acme Corp");
-    expect(signalsQuery({ name: "Jane Doe" })).toBe("Jane Doe");
+    expect(signalsQuery({ business: "Acme Corp", email: "ap@acme.com" })).toBe('"Acme Corp" acme.com');
+    expect(signalsQuery({ business: "Acme Corp", email: "joe@gmail.com" })).toBe('"Acme Corp"');
+    expect(signalsQuery({ name: "Jane Doe" })).toBe('"Jane Doe"');
     expect(signalsQuery({})).toBe("");
   });
 
@@ -44,7 +44,17 @@ describe("payer signals", () => {
     expect(r.risk).toBe("distress");
     expect(calls[0].url).toBe("https://api.tavily.com/search");
     expect(calls[0].auth).toBe("Bearer tvly-test");
-    expect(calls[0].body).toMatchObject({ query: "Acme Corp", topic: "news", time_range: "month", search_depth: "basic" });
+    expect(calls[0].body).toMatchObject({ query: '"Acme Corp"', topic: "news", time_range: "month", search_depth: "basic" });
+  });
+
+  it("ignores articles that do not mention the client (a film review is not a bankruptcy)", async () => {
+    const noise = [{ title: "Coyote vs. Acme review: taking on corporate bigwigs", url: "u", content: "a looney lawsuit comedy" }];
+    expect(aboutClient(noise, "Acme Corp")).toHaveLength(0);
+    const fetchImpl = (async () => new Response(JSON.stringify({ results: noise }), { status: 200 })) as typeof fetch;
+    const r = await payerSignals({ business: "Acme Corp" }, { TAVILY_API_KEY: "tvly-test" }, fetchImpl);
+    expect(r.risk).toBe("none");
+    expect(r.evidence).toHaveLength(0);
+    expect(r.recommendation).toMatch(/none mention the client/);
   });
 
   it("degrades to unknown when the search fails", async () => {
