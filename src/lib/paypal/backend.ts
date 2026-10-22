@@ -2,6 +2,7 @@
  * One entry point for "what does the business look like right now", in either mode.
  * Mock: straight from the in-memory store. Sandbox: PayPal Agent Toolkit list calls + local overlay.
  */
+import { activeModelId, activeProvider } from "../llm";
 import { isMockLlm, isMockPayPal, sandboxRequestedWithoutCredentials } from "../env";
 import { getStore, overlayFor } from "../store";
 import { liveExecute, mapDispute, mapInvoice, mapTransaction } from "./live";
@@ -16,11 +17,10 @@ export function currentMode(): Mode {
 
 export function llmLabel(): string {
   if (isMockLlm()) return "rule planner (no LLM key)";
-  if (process.env.LLM_MODEL) return process.env.LLM_MODEL;
-  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return "gemini-2.5-flash";
-  if (process.env.GROQ_API_KEY) return "groq/openai/gpt-oss-120b";
-  if (process.env.NEBIUS_API_KEY) return "nebius/nvidia/NVIDIA-Nemotron";
-  return "rule planner (no LLM key)";
+  const p = activeProvider();
+  const id = activeModelId();
+  if (!p || !id) return "rule planner (no LLM key)";
+  return p === "google" ? id : `${p}/${id}`;
 }
 
 /** Execute a PayPal tool in whichever backend is active. */

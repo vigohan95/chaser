@@ -18,6 +18,10 @@ export function sandboxRequestedWithoutCredentials(): boolean {
 export function isMockLlm(): boolean {
   if (process.env.MOCK_LLM === "1") return true;
   if (process.env.MOCK_LLM === "0") return false;
+  const forced = (process.env.LLM_PROVIDER ?? "").toLowerCase();
+  if (forced === "google") return !process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  if (forced === "groq") return !process.env.GROQ_API_KEY;
+  if (forced === "nebius") return !process.env.NEBIUS_API_KEY;
   return !(
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
     process.env.GROQ_API_KEY ||
