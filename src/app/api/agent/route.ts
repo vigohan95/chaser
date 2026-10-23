@@ -6,6 +6,7 @@ import { audit, getStore } from "@/lib/store";
 import { readBody, statePayload, withSnapshot } from "@/lib/api";
 import { isMockLlm } from "@/lib/env";
 import { clientIp, takeLlmRun } from "@/lib/llm/quota";
+import { approvalWaitSpan } from "@/lib/telemetry";
 
 export const maxDuration = 60;
 
@@ -20,7 +21,11 @@ async function auditApprovalResponses(messages: UIMessage[]) {
       const tool = getToolName(part);
       const [invoices, disputes] = await Promise.all([getInvoices(), getDisputes()]);
       const ev = evaluateAction(tool, part.input, { policy: store.policy, invoices, disputes });
-      audit({ actor: "user", tool, action: `${ev.summary} - ${part.approval.approved ? "approved" : "denied"} by you`, decision: part.approval.approved ? "approved" : "denied", reason: part.approval.reason ?? ev.reason, rule: ev.rule, input: part.input, output: { approval_id: part.approval.id } });
+      // The wait for a human spans two requests; it is reconstructed from the "waiting for your approval" audit entry.
+      const key = JSON.stringify(part.input);
+      const request = store.audit.find((a) => a.decision === "approval-required" && a.tool === tool && JSON.stringify(a.input) === key);
+      const waitMs = approvalWaitSpan(request, { tool, approved: part.approval.approved, rule: ev.rule });
+      audit({ actor: "user", tool, action: `${ev.summary} - ${part.approval.approved ? "approved" : "denied"} by you`, decision: part.approval.approved ? "approved" : "denied", reason: part.approval.reason ?? ev.reason, rule: ev.rule, input: part.input, output: { approval_id: part.approval.id, ...(waitMs !== undefined ? { wait_ms: waitMs } : {}) } });
       seen.add(part.approval.id);
     }
   }

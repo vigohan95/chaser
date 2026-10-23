@@ -47,3 +47,6 @@ next-env.d.ts
 
 # demo video outputs (scripts/make_video.py)
 /video/
+
+# local trace dumps (scripts/trace-smoke.ts)
+traces/

@@ -7,6 +7,7 @@ import { currentMode, getDisputes, getInvoices } from "../paypal/backend";
 import { evaluateAction } from "../policy/engine";
 import { audit, getStore } from "../store";
 import { systemPrompt } from "./system";
+import { withSpan } from "../telemetry";
 import { buildTools } from "./tools";
 
 export const MAX_STEPS = 14;
@@ -17,7 +18,7 @@ export interface AgentSetup {
   system: string;
   stopWhen: ReturnType<typeof stepCountIs>;
   /** AI SDK v7 `toolApproval` hook: the policy engine decides allow / ask / deny per tool call. */
-  toolApproval: (options: { toolCall: { toolName: string; input: unknown } }) => Promise<ToolApprovalStatus>;
+  toolApproval: (options: { toolCall: { toolName: string; input: unknown; toolCallId?: string } }) => Promise<ToolApprovalStatus>;
 }
 
 export function agentSetup(opts: { unattended?: boolean; forceMock?: boolean } = {}): AgentSetup {
@@ -29,8 +30,14 @@ export function agentSetup(opts: { unattended?: boolean; forceMock?: boolean } =
     system: systemPrompt(store.policy, currentMode()),
     stopWhen: stepCountIs(MAX_STEPS),
     toolApproval: async ({ toolCall }) => {
-      const [invoices, disputes] = await Promise.all([getInvoices(), getDisputes()]);
-      const ev = evaluateAction(toolCall.toolName, toolCall.input, { policy: store.policy, invoices, disputes });
+      // The policy check is a span of its own: the SDK sees the tool call, not the verdict or what it cost to reach it.
+      // toolApproval runs outside the SDK's span context, so the span is a root; the tool call id lets a backend join it to the step.
+      const ev = await withSpan("chaser.policy.decide", { "chaser.tool": toolCall.toolName, ...(toolCall.toolCallId ? { "gen_ai.tool.call.id": toolCall.toolCallId } : {}) }, async (span) => {
+        const [invoices, disputes] = await Promise.all([getInvoices(), getDisputes()]);
+        const verdict = evaluateAction(toolCall.toolName, toolCall.input, { policy: store.policy, invoices, disputes });
+        span.setAttributes({ "chaser.policy.decision": verdict.decision, "chaser.policy.rule": verdict.rule ?? "", "chaser.policy.summary": verdict.summary });
+        return verdict;
+      });
       if (ev.decision === "deny") {
         audit({ actor: "policy", tool: toolCall.toolName, action: `${ev.summary} - blocked`, decision: "denied", reason: ev.reason, rule: ev.rule, input: toolCall.input });
         return { type: "denied", reason: ev.reason };
